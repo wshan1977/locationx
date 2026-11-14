@@ -79,9 +79,10 @@
   .locs button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 5px 10px;
                  font: inherit; font-size: 13px; cursor: pointer; }
   .locs button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .aoa { display: grid; grid-template-columns: minmax(260px, 1fr) 1.3fr; gap: 10px; height: 100%; padding: 10px; }
+  .aoa { display: grid; grid-template-columns: 1.45fr 1fr; gap: 10px; height: 100%; padding: 10px; }
+  .aoa .col { display: grid; grid-template-rows: 1.15fr 1fr 1fr; gap: 10px; min-height: 0; }
+  #aoa3 { border: 1px solid var(--line); }
   .aoa canvas { border-radius: 10px; width: 100%; height: 100%; display: block; }
-  .charts { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; min-height: 0; }
   .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
            text-align: center; color: var(--sub); font-size: 14px; padding: 20px; pointer-events: none; }
   .empty.banner { inset: 10px 10px auto 10px; height: auto; background: #fff8e6; border: 1px solid #f3dca6;
@@ -113,7 +114,9 @@
     .stage { height: 440px; }
     .views { flex-direction: column; }
     .views canvas + canvas { border-left: 0; border-top: 1px solid var(--line); }
-    .aoa { grid-template-columns: 1fr; grid-template-rows: 220px 1fr; }
+    .aoa { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    .aoa .col { grid-template-rows: 1fr; grid-template-columns: 1fr 1fr; }
+    #chEl { display: none !important; }
     .refgrid { grid-template-columns: 1fr; }
     nav .links { display: none; }
   }
@@ -165,8 +168,8 @@
     <div class="card stage" id="stage">
       <div class="views" id="views"><canvas id="cv2"></canvas><canvas id="cv3"></canvas></div>
       <div class="aoa" id="aoaWrap" style="display:none">
-        <canvas id="dial"></canvas>
-        <div class="charts"><canvas id="chAz"></canvas><canvas id="chEl"></canvas></div>
+        <canvas id="aoa3"></canvas>
+        <div class="col"><canvas id="dial"></canvas><canvas id="chAz"></canvas><canvas id="chEl"></canvas></div>
       </div>
       <div class="empty" id="empty">데이터를 기다리는 중입니다…</div>
     </div>
@@ -477,12 +480,13 @@
       label(g, `높이 ${l.z.toFixed(1)} m`, top[0] + 26, top[1] + 5, '#5b6b7c', 11);
     }
   }
-  function draw3d(c) {
+  function draw3d(c, rays = false) {
     const { g, w, h, dpr } = fit(c), V = st.v3;
     const key = [w, h, dpr, V.yaw, V.pitch, V.zoom, V.panX, V.panY, st.placeVer, JSON.stringify(bounds())].join('|');
     if (key !== cacheKey) { drawStatic3d(w, h, dpr); cacheKey = key; }
     g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(cache3, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const { P } = cam3(w, h);
+    if (rays) drawRays(g, P);
     for (const [id, t] of Object.entries(st.tags)) {
       if (t.x === undefined) continue;
       const alpha = live(t) ? 1 : 0.35;
@@ -497,6 +501,30 @@
       g.globalAlpha = 1;
     }
     label(g, '드래그: 돌려 보기 · 휠: 확대', 10, h - 10, '#8a99a8', 11);
+    if (rays) label(g, '선 = 로케이터가 잰 태그 방향 (여러 선이 만나는 곳이 태그 위치)', 10, 36, '#37474f', 12, true);
+  }
+
+  // 방향 광선: 로케이터 좌표축의 측정 방향 (cos el·cos az, cos el·sin az, sin el) → 자세 R(데이터)로 방 좌표
+  // 태그 높이(모르면 바닥)까지 연장 · 선택한 로케이터는 굵게
+  function drawRays(g, P) {
+    const now = Date.now();
+    for (const [lid, byTag] of Object.entries(st.angles)) {
+      const l = st.locators[lid]; if (!l) continue;
+      const sel = lid === st.selLoc;
+      for (const [tag, arr] of Object.entries(byTag)) {
+        const s = arr[arr.length - 1]; if (!s || now - s.t > SLEEP_MS) continue;
+        const az = s.az * Math.PI / 180, el = s.el * Math.PI / 180, R = l.R;
+        const v = [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)];
+        const d = [R[0] * v[0] + R[1] * v[1] + R[2] * v[2], R[3] * v[0] + R[4] * v[1] + R[5] * v[2], R[6] * v[0] + R[7] * v[1] + R[8] * v[2]];
+        const tz = st.tags[tag]?.z ?? 0;
+        let k = d[2] < -0.05 ? (tz - l.z) / d[2] : 6; k = Math.max(0.3, Math.min(12, k));
+        const a = P(l.x, l.y, l.z), b = P(l.x + d[0] * k, l.y + d[1] * k, l.z + d[2] * k);
+        g.globalAlpha = sel ? 0.95 : 0.55; g.strokeStyle = colorOf(tag); g.lineWidth = sel ? 3 : 1.6; g.setLineDash(sel ? [] : [6, 4]);
+        g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.setLineDash([]);
+        g.fillStyle = colorOf(tag); g.beginPath(); g.arc(b[0], b[1], sel ? 4 : 3, 0, 7); g.fill();
+        g.globalAlpha = 1;
+      }
+    }
   }
 
   // ── 방향 감지 (AOA): 로케이터별 방위·앙각 원 + 흐르는 그래프 ───────────
@@ -557,7 +585,7 @@
     '2d': '위에서 내려다본 지도입니다. 태그 그림이 있는 곳이 지금 위치이고, 점선은 지나온 길이에요. (드래그: 이동 · 휠: 확대)',
     '3d': '로케이터의 실제 모양과 설치 높이까지 입체로 봅니다. 파란 선은 로케이터가 바라보는 방향이에요. 드래그해서 돌려 보세요.',
     'both': '평면도와 입체 화면을 나란히 봅니다. 같은 태그가 두 화면에서 함께 움직입니다.',
-    'aoa': '로케이터 한 대가 "태그가 어느 쪽에 있는지"를 각도로 알아낸 결과입니다. 위치는 이런 각도 여러 개를 합쳐서 계산합니다.',
+    'aoa': '로케이터마다 "태그가 어느 쪽에 있는지"를 각도로 잰 결과입니다. 왼쪽 입체 화면의 선이 그 방향이고, 여러 선이 만나는 곳이 태그 위치예요. 오른쪽에서 고른 로케이터의 각도 변화를 봅니다.',
   };
   const stage = document.getElementById('stage'), desc = document.getElementById('desc');
   const setView = (v) => {
@@ -567,7 +595,8 @@
   document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setView(b.dataset.view));
   setView(['2d', '3d', 'both', 'aoa'].includes(params.get('view')) ? params.get('view') : '3d');
   let drag = null;
-  const which = (e) => e.target === cv3 ? 'v3' : e.target === cv2 ? 'v2' : null;
+  const aoa3 = document.getElementById('aoa3');
+  const which = (e) => (e.target === cv3 || e.target === aoa3) ? 'v3' : e.target === cv2 ? 'v2' : null;
   stage.addEventListener('pointerdown', e => { const k = which(e); if (!k) return; drag = { k, x: e.clientX, y: e.clientY }; stage.setPointerCapture(e.pointerId); });
   stage.addEventListener('pointermove', e => {
     if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
@@ -614,7 +643,7 @@
     cv3.style.display = (v === '3d' || v === 'both') ? '' : 'none';
     if (v === '2d' || v === 'both') draw2d(cv2);
     if (v === '3d' || v === 'both') draw3d(cv3);
-    if (isAoa) drawAoa();
+    if (isAoa) { draw3d(aoa3, true); drawAoa(); }
     const hasPos = Object.keys(st.tags).length > 0, hasAng = Object.keys(st.angles).length > 0;
     empty.style.display = isAoa ? (hasAng ? 'none' : '') : (hasPos || Object.keys(st.locators).length ? 'none' : '');
     empty.className = isAoa ? 'empty banner' : 'empty';
