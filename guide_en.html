@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LocationX Installation &amp; Operation Guide</title>
-<meta name="description" content="Covers the LocationX locator kit from hardware installation (initial setup) to locator placement with the Position Setting Tool and MQTT data verification.">
+<meta name="description" content="Covers the LocationX locator kit from hardware installation (initial setup) to locator placement with the Install &amp; Verify Tool and MQTT data verification.">
 <style>
   :root {
     --navy: #0e1a2b;
@@ -113,7 +113,7 @@
     <div class="links">
       <a href="index.html">Brochure</a>
       <a href="#setup">Installation</a>
-      <a href="#tool">Position Setup</a>
+      <a href="#tool">Install &amp; Verify Tool</a>
       <a href="#mqtt">MQTT Check</a>
       <a class="lang" href="guide.html">한국어</a>
     </div>
@@ -126,7 +126,7 @@
     <h1>LocationX Installation &amp; Operation Guide</h1>
     <p>This guide walks through the full workflow of the LocationX locator kit — from hardware
        installation (initial setup), through locator placement and server configuration with the
-       <b>LocationX Position Setting Tool</b>, to verifying MQTT data.</p>
+       <b>LocationX Install &amp; Verify Tool</b>, to verifying MQTT data.</p>
   </div>
 </header>
 
@@ -163,7 +163,7 @@
     <table>
       <tr><th>Software</th><th>Purpose</th><th>Notes</th></tr>
       <tr>
-        <td><b>LocationX Position Setting Tool</b></td>
+        <td><b>LocationX Install &amp; Verify Tool</b></td>
         <td>Device discovery · locator placement on a floor plan · pushing settings to the server · verifying data reception</td>
         <td>Required (Windows) — <a href="https://github.com/wshan1977/locationx_position_setting_tool" target="_blank">GitHub</a></td>
       </tr>
@@ -212,81 +212,75 @@
 
     <figure class="shot">
       <img src="images/guide_install_layout_position_info.png" alt="Coordinate information per locator">
-      <figcaption>Coordinate information per locator — the coordinate (x/y/z) and orientation values of each locator. These are the values registered to the server when you place locators in the Position Setting Tool</figcaption>
+      <figcaption>Coordinate information per locator — the coordinate (x/y/z) and orientation values of each locator. These are the values registered to the server when you place locators in the Install &amp; Verify Tool</figcaption>
     </figure>
 
-    <div class="note blue"><span class="ico">💡</span><span>Registering and changing each locator's position and orientation is handled in the <a href="#tool">Position Setting Tool</a> below — you never need to edit config files by hand.</span></div>
+    <div class="note blue"><span class="ico">💡</span><span>Registering and changing each locator's position and orientation is handled in the <a href="#tool">Install &amp; Verify Tool</a> below — you never need to edit config files by hand.</span></div>
   </section>
 
-  <!-- ═══ 3. Position Setting Tool ═══ -->
+  <!-- ═══ 3. Install & Verify Tool ═══ -->
   <section class="step" id="tool">
-    <h2><span class="no">3</span>Position Setup — LocationX Position Setting Tool</h2>
+    <h2><span class="no">3</span>Setup &amp; Verification — LocationX Install &amp; Verify Tool</h2>
     <p class="dim">
-      A Windows desktop tool that discovers locator cards on the LAN, lets you place them on a
-      floor plan by drag &amp; drop, and updates the positioning configuration on the server.
-      Download it from <a href="https://github.com/wshan1977/locationx_position_setting_tool/releases" target="_blank">GitHub Releases</a>.
+      A Windows application to discover, place and calibrate the devices (setup) and to confirm that positions and
+      angles come out correctly (verification). It has three top tabs — <b>[Settings] [AOD mode (positioning)]
+      [AOA mode (direction)]</b> — each with a left-hand menu.
+      Download it from <a href="https://github.com/wshan1977/locationx_position_setting_tool/releases" target="_blank">GitHub Releases</a>
+      (executable <code>locationx_install_tool_vX.Y.Z.exe</code>).
     </p>
 
-    <h3>3-1. Discover Devices</h3>
+    <h3>3-1. Discover devices — Settings › ① Locator</h3>
     <ol>
-      <li>Launch the tool, open the <b>Position Setup (Server)</b> tab, and click <b>[Discover Devices (UDP)]</b>.</li>
-      <li>The <b>MQTT server card</b> and all <b>locators</b> on the same network are discovered automatically and listed in the left panel.</li>
-      <li>The server card's IP address is set as the target server automatically.</li>
+      <li>Click <b>[Locator search (UDP)]</b>; the <b>server card</b> and <b>locators</b> on the same network appear in the list.</li>
+      <li>LED identification, restart, reboot and software update per card are on the same screen.</li>
     </ol>
 
-    <h3>3-2. Prepare the Floor Plan</h3>
+    <h3>3-2. Floor plan and locator placement — Settings › ③ Position</h3>
     <ol>
-      <li><b>Load floor plan</b> — select a floor plan image (png/jpg).</li>
-      <li><b>Scale calibration</b> — click two points with a known real-world distance on the plan and enter the distance in meters.</li>
-      <li><b>Set origin</b> — click the position to use as world coordinate (0,0).</li>
-    </ol>
-
-    <h3>3-3. Place the Locators</h3>
-    <ol>
-      <li><b>Drag locators</b> from the right-hand list onto the canvas at their actual installed positions (default mounting height z = 3.0 m).</li>
-      <li>Click a marker to edit its coordinates, orientation, and detailed AoA settings in the left panel.</li>
-      <li>Global positioning settings (estimation mode, filtering weight, etc.) are adjusted in the right panel.</li>
+      <li><b>Load floor plan</b> → <b>scale calibration</b> (two points of known distance) → set the <b>origin</b>.</li>
+      <li>Drag locators from the left list onto the canvas at their real positions and enter height (z) and orientation.
+          Set the orientation so that the angle lines in AOD mode point at the real tag.</li>
+      <li>Adjust the estimation mode (2D/3D), fixed tag height, angle-spike rejection and filtering in the global settings on the right.</li>
+      <li>Switch [Top | 3D]; the 3D <b>rotate edit</b> mode lets you set orientation visually.</li>
     </ol>
 
     <figure class="shot">
-      <img src="images/setting_tool_screenshot2.png" alt="Position Setting Tool — placement canvas">
-      <figcaption>Position Setup (Server) tab — locators placed on the canvas after device discovery</figcaption>
+      <img src="images/tool_position_3d.png" alt="Install &amp; Verify Tool — ③ Position, 3D view">
+      <figcaption>Settings › ③ Position — locator placement (3D) and global positioning settings</figcaption>
     </figure>
 
-    <h3>3-4. Deploy to the Server</h3>
+    <h3>3-3. Send to server</h3>
     <ol>
-      <li>Click <b>[Deploy to Server]</b> — the changes (diff) are displayed for review.</li>
-      <li>Confirm to apply: the server card's <code>positioning_config.json</code> is updated and the position engine restarts automatically.</li>
-      <li>Save the project (<code>.lxpos.json</code>) to keep the floor plan, calibration, and placement locally.</li>
+      <li><b>[Send to server]</b> shows the diff, applies it to the server card and restarts the position engine.</li>
+      <li>Floor plans and placements are saved per site and floor automatically; you can also keep a project file (<code>.lxpos.json</code>).</li>
     </ol>
-    <div class="note blue"><span class="ico">💡</span><span>Moving a locator later works the same way — drag its marker on the canvas and click [Deploy to Server] again.</span></div>
 
-    <h3>3-5. Verify Data Reception</h3>
-    <p>In the <b>Data Reception</b> tab, connect to the MQTT broker to see the per-locator angle
-       streams (<code>silabs/aoa/angle/&lt;locator&gt;/&lt;tag&gt;</code>) in real time. Turn on a tag
-       and you can immediately check the message rate (msg/s) and the azimuth / elevation values.</p>
-
+    <h3>3-4. Check positions — AOD mode (positioning)</h3>
+    <p>In <b>LAN</b>, connect to the server card's broker to see tag positions on the floor plan in 2D/3D, together with
+       per-locator angle lines and coverage. Choose which tags to show with the <b>tag list</b> on the right.
+       <b>Remote</b> shows positions and device status relayed to an external broker.</p>
     <figure class="shot">
-      <img src="images/setting_tool_screenshot.png" alt="Position Setting Tool — data reception tab">
-      <figcaption>Data Reception tab — per-locator angle stream status</figcaption>
+      <img src="images/tool_aod_3d.png" alt="AOD mode — LAN 3D position view">
+      <figcaption>AOD mode › LAN — two tags with per-locator angle lines and the tag list</figcaption>
     </figure>
 
-    <h3>3-6. Verify Positions</h3>
-    <p>Once placement is complete, check the computed tag positions on the floor plan in the
-       top view / 3D view.</p>
-
+    <h3>3-5. Check direction — AOA mode (direction)</h3>
+    <p>Pick one locator to see the tag direction (azimuth, elevation) as a 0–360° dial, a 3D view and scrolling charts —
+       useful for checking mounting orientation and diagnosing reflections or jitter.</p>
     <figure class="shot">
-      <img src="images/viewer_demo.gif" alt="Real-time position view in action"
-           onerror="this.onerror=null;this.src='images/viewer_screenshot.png'">
-      <figcaption>Real-time position view — the tag position updates live as the tag moves</figcaption>
+      <img src="images/tool_aoa_2d.png" alt="AOA mode — azimuth/elevation dial and charts">
+      <figcaption>AOA mode — azimuth needle, elevation dot (center = boresight) and the last 60 s</figcaption>
     </figure>
 
-    <h3>Device Settings Tab — Locator Management</h3>
+    <h3>3-6. Tag management — Settings › ② Tag</h3>
     <ul>
-      <li><b>LED identify</b> — blinks the selected locator's LED to find the physical device on site</li>
-      <li><b>Restart AoA service</b> — applies changes such as a new MQTT server address to the locator</li>
-      <li><b>Reboot device</b> — restarts the locator remotely</li>
-      <li><b>Status web page</b> — check the locator's UART reception, CPU temperature, broker connection, and AoA angle graph in a browser (<code>http://&lt;card IP&gt;:8080</code>)</li>
+      <li>Tag scan, status read, <b>transmit interval (ms)</b> for low-power operation, and <b>over-the-air firmware update</b></li>
+      <li>Connection path: <b>PC Bluetooth</b> or a <b>locator</b> (an installed locator connects on your behalf — the PC need not be near the tag)</li>
+    </ul>
+
+    <h3>Locator status web page</h3>
+    <ul>
+      <li>Antenna reception, CPU temperature, broker connection and angle charts per locator at <code>http://&lt;card IP&gt;:8080</code></li>
     </ul>
   </section>
 
@@ -300,20 +294,16 @@
         <ul>
           <li>Name: <code>aoa-server-1</code></li>
           <li>Protocol: <code>mqtt://</code></li>
-          <li>Host: <code>&lt;server card IP&gt;</code> (found via device discovery in the setting tool)</li>
+          <li>Host: <code>&lt;server card IP&gt;</code> (found via Locator search in the Install &amp; Verify Tool)</li>
           <li>Port: <code>1883</code></li>
         </ul>
       </li>
-      <li>Open <b>ADVANCED</b>, set the topic to <code>#</code> only, and go back with BACK.</li>
+      <li>Open <b>ADVANCED</b>, set the topic to <code>controlbit/#</code>, and go back with BACK.</li>
       <li>Click <b>CONNECT</b> to connect to the MQTT broker.</li>
       <li>You can confirm data is being received, including the azimuth and elevation values.</li>
     </ol>
 
-    <figure class="shot">
-      <img src="images/guide_mqtt_explorer.png" alt="MQTT Explorer receiving data"
-           onerror="ph(this,'Screenshot of MQTT Explorer connected and receiving data')">
-      <figcaption>MQTT Explorer — receiving angle data</figcaption>
-    </figure>
+    
 
     <h3>Received Data Fields</h3>
     <table>
@@ -324,13 +314,13 @@
       <tr><td><code>elevation_stdev</code></td><td><b>Standard deviation</b> of the elevation measurement</td></tr>
     </table>
 
-    <pre class="term"><span class="c"># Angle (locator → broker)</span>
-<span class="t">silabs/aoa/angle/&lt;locator_id&gt;/&lt;tag_id&gt;</span>
-{ "azimuth": 42.1, "azimuth_stdev": 1.3, "elevation": -35.6, "elevation_stdev": 2.0 }
+    <pre class="term"><span class="c"># Angle (locator → broker · elevation 0–90° from the board plane)</span>
+<span class="t">controlbit/aoa/angle/&lt;locator_id&gt;/&lt;tag_id&gt;</span>
+{ "azimuth": 42.1, "azimuth_stdev": 1.3, "elevation": 55.6, "elevation_stdev": 2.0 }
 
 <span class="c"># Position (position engine → broker · in meters)</span>
-<span class="t">silabs/aoa/position/&lt;tag_id&gt;</span>
-{ "x": 2.41, "y": -1.02, "z": 1.20 }</pre>
+<span class="t">controlbit/aoa/position/&lt;positioning_id&gt;/&lt;tag_id&gt;</span>
+{ "x": 2.41, "x_stdev": 0.12, "y": -1.02, "y_stdev": 0.10, "z": 0.0, "z_stdev": 0.01 }</pre>
   </section>
 
 </main>

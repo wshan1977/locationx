@@ -291,11 +291,11 @@
         <div class="arrow">➤<small>MQTT position</small></div>
         <div class="node">
           <b>💻 응용 · 도구</b>
-          <span>위치 시각화(2D/3D)<br>설정 도구 · 외부망 중계</span>
+          <span>위치 시각화(2D/3D)<br>설치·검증 도구 · 외부망 중계</span>
         </div>
       </div>
       <div class="legend">
-        각도 토픽 <code>silabs/aoa/angle</code> · 위치 토픽 <code>silabs/aoa/position</code> ·
+        각도 토픽 <code>controlbit/aoa/angle</code> · 위치 토픽 <code>controlbit/aoa/position</code> ·
         외부망 중계 <code>locationx/&lt;siteId&gt;/…</code>
       </div>
     </div>
@@ -406,18 +406,18 @@
           <h3>포지션 서버 구성 저장소</h3>
           <code class="path">wshan1977/locationx-mqtt_server_config</code>
           <p>MQTT 브로커(mosquitto) + 위치 계산 엔진 + 설정 API 서버 + 외부망 중계(cloud agent)를
-             담은 서버 카드 구성. 여러 로케이터의 각도를 융합해 <code>silabs/aoa/position</code>으로
+             담은 서버 카드 구성. 여러 로케이터의 각도를 융합해 <code>controlbit/aoa/position</code>으로
              위치를 발행합니다.</p>
         </div>
       </div>
       <div class="card repo">
         <div class="badge">T</div>
         <div>
-          <h3>위치 설정 도구 (Windows)</h3>
-          <code class="path">wshan1977/locationx_position_setting_tool</code>
-          <p>바닥 도면을 불러와 스케일 보정 후, LAN에서 검색된 로케이터를 도면 위로
-             드래그해 배치하는 Flutter 데스크톱 앱. [서버로 전송] 한 번으로
-             서버의 positioning 설정이 갱신되고 엔진이 재시작됩니다.</p>
+          <h3>설치·검증 도구 (Windows)</h3>
+          <code class="path">LocationX Install &amp; Verify Tool</code>
+          <p>장비 검색 → 도면 위 로케이터 배치·자세 보정 → 서버 전송까지 한 화면에서 하고,
+             <b>AOD 모드</b>(위치측위)와 <b>AOA 모드</b>(방향각)로 동작을 검증합니다.
+             태그 송신 주기 설정과 펌웨어 무선 업데이트(PC 또는 로케이터 경유)도 지원합니다.</p>
           <p style="margin-top:8px"><a href="https://github.com/wshan1977/locationx_position_setting_tool" target="_blank">GitHub에서 보기 →</a></p>
         </div>
       </div>
@@ -432,20 +432,27 @@
       </div>
     </div>
 
-    <div class="grid c2" style="margin-top:26px">
+    <div class="grid c3" style="margin-top:26px">
       <div class="card">
-        <img class="photo" src="images/setting_tool_screenshot2.png"
-             alt="LocationX 위치 설정 도구 화면"
-             onerror="ph(this,'설정 도구 화면 캡처')">
-        <h3 style="margin-top:14px">설정 도구 화면</h3>
-        <p>도면 위 드래그앤드롭 배치 · 스케일 보정 · 원점 설정 · 서버 전송</p>
+        <img class="photo" src="images/tool_position_3d.png"
+             alt="LocationX 설치·검증 도구 — 위치 설정"
+             onerror="ph(this,'설치·검증 도구 — 위치 설정')">
+        <h3 style="margin-top:14px">설정 — 배치·보정</h3>
+        <p>도면 위 로케이터 배치 · 자세(3D 회전 편집) · 전역 위치 계산 설정 · 서버 전송</p>
       </div>
       <div class="card">
-        <img class="photo" src="images/viewer_screenshot.png"
-             alt="LocationX 위치 시각화 화면"
-             onerror="ph(this,'위치 시각화(2D/3D) 화면 캡처')">
-        <h3 style="margin-top:14px">실시간 위치 시각화</h3>
-        <p>Top view와 3D 뷰에서 태그 이동 궤적을 실시간 확인</p>
+        <img class="photo" src="images/tool_aod_3d.png"
+             alt="LocationX AOD 모드 — 실시간 위치"
+             onerror="ph(this,'AOD 모드 — 실시간 위치')">
+        <h3 style="margin-top:14px">AOD 모드 — 위치측위</h3>
+        <p>도면 위 2D/3D 태그 위치 · 로케이터별 각도 점선 · 태그 목록으로 표시 선택</p>
+      </div>
+      <div class="card">
+        <img class="photo" src="images/tool_aoa_2d.png"
+             alt="LocationX AOA 모드 — 방향각"
+             onerror="ph(this,'AOA 모드 — 방향각')">
+        <h3 style="margin-top:14px">AOA 모드 — 방향각</h3>
+        <p>로케이터별 방위·앙각을 원·3D·흐르는 그래프로 · 설치 방향과 반사 진단</p>
       </div>
     </div>
   </div>
@@ -461,7 +468,7 @@
       <li><b>네트워크 준비</b><span>공유기 + PoE 스위칭 허브 구성. 포지션 서버 카드와 로케이터를 같은 네트워크에 연결합니다.</span></li>
       <li><b>포지션 서버 기동</b><span>서버 카드(aoa-server-1)에 전원을 넣으면 MQTT 브로커(1883)와 위치 엔진이 자동 실행됩니다.</span></li>
       <li><b>로케이터 설치</b><span>천장에 로케이터를 설치하고 PoE 허브에 랜선을 연결하면, 별도 설정 없이 서버에 자동 접속해 각도 데이터를 전송합니다.</span></li>
-      <li><b>로케이터 배치 등록</b><span>위치 설정 도구에서 도면을 불러와 로케이터를 드래그로 배치하고 [서버로 전송] — 좌표·자세가 서버에 반영됩니다.</span></li>
+      <li><b>로케이터 배치 등록</b><span>설치·검증 도구에서 도면을 불러와 로케이터를 드래그로 배치하고 [서버로 전송] — 좌표·자세가 서버에 반영됩니다.</span></li>
       <li><b>위치 확인</b><span>태그를 켜면 MQTT Explorer에서 angle/position 데이터를, 시각화 뷰어에서 2D/3D 실시간 위치를 확인할 수 있습니다.</span></li>
     </ol>
   </div>
@@ -477,15 +484,15 @@
       위치 데이터를 활용할 수 있습니다.
     </p>
     <pre class="mqtt"><span class="c"># 로케이터 → 브로커 : 태그 신호의 도래각</span>
-<span class="t">silabs/aoa/angle/&lt;locator_id&gt;/&lt;tag_id&gt;</span>
-{ "azimuth": 42.1, "azimuth_stdev": 1.3, "elevation": -35.6, "elevation_stdev": 2.0 }
+<span class="t">controlbit/aoa/angle/&lt;locator_id&gt;/&lt;tag_id&gt;</span>
+{ "azimuth": 42.1, "azimuth_stdev": 1.3, "elevation": 55.6, "elevation_stdev": 2.0 }
 
 <span class="c"># 포지션 엔진 → 브로커 : 계산된 태그 좌표 (미터 단위)</span>
-<span class="t">silabs/aoa/position/&lt;tag_id&gt;</span>
-{ "x": 2.41, "y": -1.02, "z": 1.20 }
+<span class="t">controlbit/aoa/position/&lt;positioning_id&gt;/&lt;tag_id&gt;</span>
+{ "x": 2.41, "x_stdev": 0.12, "y": -1.02, "y_stdev": 0.10, "z": 0.0, "z_stdev": 0.01 }
 
 <span class="c"># 외부망 중계 (cloud agent) : 위치·장비 상태를 외부 브로커로</span>
-<span class="t">locationx/&lt;siteId&gt;/silabs/aoa/position/…</span>   <span class="c"># 위치 중계</span>
+<span class="t">locationx/&lt;siteId&gt;/controlbit/aoa/position/…</span>   <span class="c"># 위치 중계</span>
 <span class="t">locationx/&lt;siteId&gt;/status/&lt;deviceId&gt;</span>       <span class="c"># 장비 상태 (retained)</span></pre>
     <div class="grid c3">
       <div class="card">
@@ -504,6 +511,14 @@
         <p>내부에서 계산을 끝내고 결과만 외부 브로커로 중계 — 원격지에서도 위치·장비 상태를 봅니다.</p>
       </div>
     </div>
+    <div class="card" style="margin-top:22px">
+      <div class="icon">🧩</div>
+      <h3>개발킷 SDK</h3>
+      <p>개발킷에는 <b>데이터 인터페이스 문서(v1)</b>, <b>Python · Node.js · C# 예제</b>, 30분 퀵스타트,
+         관리 API·설치 가이드가 포함됩니다. 고객 시스템은 서버 카드 브로커의 <code>controlbit/#</code>만
+         구독하면 위치·각도를 바로 사용할 수 있습니다.</p>
+      <img class="photo" src="images/data_flow.svg" alt="LocationX 데이터 흐름" style="margin-top:12px;background:#fff">
+    </div>
   </div>
 </section>
 
@@ -512,12 +527,12 @@
     <div>
       <b>LocationX</b>
       <p style="margin-top:8px; max-width:380px">BLE AoA 기반 실시간 실내 위치추적 솔루션.<br>
-      로케이터 · 태그 · 포지션 서버 · 설정 도구의 완결형 Kit.</p>
+      로케이터 · 태그 · 포지션 서버 · 설치·검증 도구 · SDK의 완결형 Kit.</p>
     </div>
     <div>
       <b>저장소</b>
       <ul>
-        <li><a href="https://github.com/wshan1977/locationx_position_setting_tool" target="_blank">locationx_position_setting_tool</a></li>
+        <li><a href="https://github.com/wshan1977/locationx_position_setting_tool/releases" target="_blank">설치·검증 도구 (Windows) 다운로드</a></li>
       </ul>
     </div>
     <div>
