@@ -36,6 +36,15 @@
   .intro .uses { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .intro .uses span { font-size: 12.5px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
                       padding: 3px 10px; border-radius: 999px; color: #e3ecf6; }
+  .intro .uses button { font: inherit; font-size: 12.5px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22);
+                        padding: 4px 11px; border-radius: 999px; color: #e3ecf6; cursor: pointer; transition: all .15s; }
+  .intro .uses button:hover, .intro .uses button.on { background: #58e6c8; color: #0e1a2b; border-color: #58e6c8; font-weight: 700; }
+  .intro .uses-hint { display: block; font-size: 12px; color: #9fb3c8; margin-top: 6px; }
+  .scenes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
+  .scenes > span { font-size: 13px; color: var(--sub); font-weight: 700; margin-right: 2px; }
+  .scenes button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: #fff; border-radius: 999px;
+                   padding: 5px 12px; cursor: pointer; color: var(--ink); }
+  .scenes button.on { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
   .intro .cta { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .intro .cta a { font-size: 14px; font-weight: 700; padding: 9px 16px; border-radius: 10px; }
   .intro .cta .p { background: #fff; color: var(--navy); }
@@ -138,7 +147,8 @@
     <p>GPS가 닿지 않는 실내에서 사람·물건의 위치를 실시간으로 찾아 줍니다. 천장이나 벽에 <b>로케이터</b>를 달고,
        찾고 싶은 대상에 작은 <b>태그</b>를 붙이면 로케이터가 태그 신호(블루투스)가 오는 방향을 재서 위치를 계산합니다.
        아래 화면은 컨트롤비트에 설치된 실제 장비의 데이터입니다.</p>
-    <div class="uses"><span>작업자 안전·위치 관제</span><span>공구·자산 추적</span><span>물류·창고 동선</span><span>병원·요양 시설</span><span>전시·매장 분석</span></div>
+    <div class="uses"><button data-scene="safety">🦺 작업자 안전·위치 관제</button><button data-scene="tools">🔧 공구·자산 추적</button><button data-scene="logistics">🚚 물류·창고 동선</button><button data-scene="hospital">🏥 병원·요양 시설</button><button data-scene="retail">🛒 전시·매장 분석</button></div>
+    <span class="uses-hint">👆 눌러 보세요 — 아래 입체 화면이 그 현장으로 바뀌고, 실제 태그가 지게차·작업자 등에 붙어 움직입니다</span>
     <div class="cta">
       <a class="p" href="https://www.control-bit.com/contact.html" target="_blank">도입·개발킷 문의</a>
       <a class="s" href="https://www.control-bit.com/products/locationx.html" target="_blank">제품 자세히 보기</a>
@@ -163,12 +173,18 @@
     <span class="chip" id="age">마지막 수신 —</span>
   </div>
   <p class="desc" id="desc"></p>
+  <div class="scenes" id="scenes"><span>활용 예시 공간</span>
+    <button data-scene="demo" class="on">📍 데모 현장</button><button data-scene="safety">🦺 작업자 안전</button><button data-scene="tools">🔧 공구·자산</button>
+    <button data-scene="logistics">🚚 물류·창고</button><button data-scene="hospital">🏥 병원·요양</button><button data-scene="retail">🛒 전시·매장</button>
+  </div>
 
   <div class="grid">
     <div class="card stage" id="stage">
       <div class="views" id="views"><canvas id="cv2"></canvas><canvas id="cv3"></canvas></div>
       <div class="aoa" id="aoaWrap" style="display:none">
-        <canvas id="aoa3"></canvas>
+        <div style="position:relative;min-height:0"><canvas id="aoa3"></canvas>
+          <label style="position:absolute;right:10px;top:8px;font-size:12.5px;color:var(--sub);background:rgba(255,255,255,.9);padding:3px 8px;border-radius:8px;cursor:pointer">
+            <input type="checkbox" id="aoaWorld"> 실제 설치 방향으로 보기</label></div>
         <div class="col"><canvas id="dial"></canvas><canvas id="chAz"></canvas><canvas id="chEl"></canvas></div>
       </div>
       <div class="empty" id="empty">데이터를 기다리는 중입니다…</div>
@@ -232,9 +248,10 @@
     angles: {},            // loc -> tag -> [{t,az,el}]
     devices: {},           // deviceId -> status
     lastTs: 0, connected: false,
-    view: '3d', selLoc: null,
+    view: '3d', selLoc: null, scene: 'demo', heat: {}, dwell: {},
     v2: { zoom: 1, panX: 0, panY: 0 },
     v3: { yaw: -0.7, pitch: 0.95, zoom: 1, panX: 0, panY: 0 },
+    va: { yaw: -0.7, pitch: 0.9, zoom: 1, world: false },   // 방향 감지 3D (도구 AOA 탭과 같은 화면)
   };
   const short = (id) => id.slice(-4);
   const colorOf = (tag) => {
@@ -307,7 +324,9 @@
       const sd = Math.hypot(d.x_stdev || 0, d.y_stdev || 0);
       if (sd > 1000 || (d.x === 0 && d.y === 0 && d.z === 0 && sd > 100)) return;  // 계산 발산
       const t = st.tags[id] || (st.tags[id] = { trail: [], color: colorOf(id) });
+      if (t.x !== undefined) { const st1 = Math.hypot(d.x - t.x, d.y - t.y); if (st1 > 0.03 && st1 < 2) t.odo = (t.odo || 0) + st1; }
       Object.assign(t, { x: d.x, y: d.y, z: d.z || 0, sd, ts: now });
+      const hk = `${Math.floor(d.x / 0.5)},${Math.floor(d.y / 0.5)}`; st.heat[hk] = (st.heat[hk] || 0) + 1;   // 매장 열지도
       const last = t.trail[t.trail.length - 1];
       if (!last || Math.hypot(last.x - d.x, last.y - d.y) > 0.02) t.trail.push({ x: d.x, y: d.y, z: d.z || 0 });
       if (t.trail.length > 60) t.trail.shift();
@@ -339,6 +358,13 @@
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     for (const p of pts) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
     const m = 1.5; return { x0: x0 - m, x1: x1 + m, y0: y0 - m, y1: y1 + m };
+  }
+  // 입체 화면 범위: 로케이터 배치 기준으로 고정 (태그가 움직일 때마다 케이스·사물을 다시 그리지 않게)
+  function camBounds() {
+    const ls = Object.values(st.locators);
+    if (!ls.length) return bounds();
+    const m = 1.5, xs = ls.map(l => l.x), ys = ls.map(l => l.y);
+    return { x0: Math.min(...xs) - m, x1: Math.max(...xs) + m, y0: Math.min(...ys) - m, y1: Math.max(...ys) + m };
   }
   const label = (g, s, x, y, color = '#37474f', size = 12, bold = false) => {
     g.font = `${bold ? 700 : 400} ${size}px "Malgun Gothic", sans-serif`;
@@ -408,7 +434,7 @@
   // ── 입체 (3D · 궤도 카메라 · 실제 케이스 모양) ─────────────────────────
   const cache3 = document.createElement('canvas'); let cacheKey = '';
   function cam3(w, h) {
-    const V = st.v3, b = bounds(), mx = (b.x0 + b.x1) / 2, my = (b.y0 + b.y1) / 2;
+    const V = st.v3, b = camBounds(), mx = (b.x0 + b.x1) / 2, my = (b.y0 + b.y1) / 2;
     const ext = Math.max(b.x1 - b.x0, b.y1 - b.y0, 4);
     const s = Math.min(w, h) / ext * 0.85 * V.zoom;
     const cyaw = Math.cos(V.yaw), syaw = Math.sin(V.yaw), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
@@ -423,6 +449,214 @@
     return { P, b, fwd };
   }
   const LIGHT = (() => { const v = [0.35, -0.55, 0.76], l = Math.hypot(...v); return v.map(x => x / l); })();
+
+  // ── 활용 예시 공간 (연출) — 태그 위치는 실제 데이터, 주변 사물만 예시 ────────
+  const SCENES = {
+    demo:      { icon: '📍', name: '데모 현장', desc: '' },
+    safety:    { icon: '🦺', name: '작업자 안전·위치 관제', floor: '#eef1f4',
+                 desc: '공장 작업자의 안전모에 태그를 달면, 위험 구역에 들어가는 순간 관리자에게 알릴 수 있습니다.' },
+    tools:     { icon: '🔧', name: '공구·자산 추적', floor: '#f4efe7',
+                 desc: '공구 카트·고가 장비에 태그를 붙이면 "어디 두었지?"가 사라지고, 보관함에서 얼마나 떨어져 있는지 보입니다.' },
+    logistics: { icon: '🚚', name: '물류·창고 동선', floor: '#eceff1',
+                 desc: '지게차에 태그를 달면 창고 안 위치와 지나온 길, 이동 거리가 실시간으로 보입니다.' },
+    hospital:  { icon: '🏥', name: '병원·요양 시설', floor: '#eef7f5',
+                 desc: '환자·어르신 손목 태그로 위치를 확인하고, 출입구에 가까워지면 간호사·보호자에게 알릴 수 있습니다.' },
+    retail:    { icon: '🛒', name: '전시·매장 분석', floor: '#fbf5ec',
+                 desc: '쇼핑 카트·관람객 태그로 어느 매대 앞에 오래 머무는지(열지도) 분석합니다.' },
+  };
+  function room() {   // 로케이터 배치 기준 방 크기 (태그가 움직여도 사물은 고정)
+    const ls = Object.values(st.locators);
+    let x0 = -3, x1 = 3, y0 = -3, y1 = 3;
+    if (ls.length) {
+      x0 = Math.min(...ls.map(l => l.x)) - 1.2; x1 = Math.max(...ls.map(l => l.x)) + 1.2;
+      y0 = Math.min(...ls.map(l => l.y)) - 1.2; y1 = Math.max(...ls.map(l => l.y)) + 1.2;
+    }
+    return { x0, x1, y0, y1, W: x1 - x0, D: y1 - y0, X: u => x0 + u * (x1 - x0), Y: v => y0 + v * (y1 - y0) };
+  }
+  const hexRgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const shadeC = (h, lit, a = 1) => { const [r, g2, b] = hexRgb(h), k = 0.62 + 0.38 * lit; return `rgba(${r * k | 0},${g2 * k | 0},${b * k | 0},${a})`; };
+  // 상자(수직축 회전 yaw)의 보이는 면 → out에 [깊이, 화면 점들, 색]
+  function boxFaces(out, P, fwd, bx) {
+    const { x, y, z = 0, sx, sy, sz, yaw = 0, color, a = 1 } = bx, c = Math.cos(yaw), s = Math.sin(yaw), hx = sx / 2, hy = sy / 2;
+    const W = (lx, ly, lz) => [x + c * lx - s * ly, y + s * lx + c * ly, z + lz];
+    const v = [W(-hx, -hy, 0), W(hx, -hy, 0), W(hx, hy, 0), W(-hx, hy, 0), W(-hx, -hy, sz), W(hx, -hy, sz), W(hx, hy, sz), W(-hx, hy, sz)];
+    const F = [[[0, 3, 2, 1], [0, 0, -1]], [[4, 5, 6, 7], [0, 0, 1]], [[0, 1, 5, 4], [s, -c, 0]],
+               [[2, 3, 7, 6], [-s, c, 0]], [[1, 2, 6, 5], [c, s, 0]], [[3, 0, 4, 7], [-c, -s, 0]]];
+    for (const [idx, n] of F) {
+      if (n[0] * fwd[0] + n[1] * fwd[1] + n[2] * fwd[2] >= 0) continue;
+      const q = idx.map(i => P(...v[i]));
+      const lit = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      out.push([q.reduce((t, p) => t + p[2], 0) / 4, q, shadeC(color, lit, a)]);
+    }
+  }
+  function paint(g, faces) {
+    faces.sort((a, b) => b[0] - a[0]);
+    g.lineWidth = 0.8; g.lineJoin = 'round'; g.strokeStyle = 'rgba(40,50,60,.22)';
+    for (const [, q, col] of faces) {
+      g.fillStyle = col; g.beginPath(); q.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.fill(); g.stroke();
+    }
+  }
+  function floorRect(g, P, x0, y0, x1, y1, fill, stroke, dash) {
+    const q = [P(x0, y0, 0.005), P(x1, y0, 0.005), P(x1, y1, 0.005), P(x0, y1, 0.005)];
+    g.beginPath(); q.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath();
+    if (fill) { g.fillStyle = fill; g.fill(); }
+    if (stroke) { g.strokeStyle = stroke; g.lineWidth = 2.5; g.setLineDash(dash || []); g.stroke(); g.setLineDash([]); }
+  }
+  const centerLabel = (g, p, s, col, size = 12) => { g.textAlign = 'center'; label(g, s, p[0], p[1], col, size, true); g.textAlign = 'left'; };
+  const rectDist = (z, x, y) => Math.hypot(Math.max(z.x0 - x, 0, x - z.x1), Math.max(z.y0 - y, 0, y - z.y1));
+
+  // 장면별 고정 사물(B)과 바닥 구역(Z) — 방 크기 비율로 배치
+  function layout(k, R) {
+    const B = [], Z = [], X = R.X, Y = R.Y;
+    if (k === 'safety') {
+      for (const v of [.18, .45, .72]) B.push({ x: X(.06), y: Y(v), sx: 1.0, sy: 1.1, sz: 1.4, color: '#7d90a6' },
+                                             { x: X(.06), y: Y(v), z: 1.4, sx: .7, sy: .5, sz: .25, color: '#f08c2e' });
+      B.push({ x: X(.5), y: Y(.95), sx: R.W * .7, sy: .55, sz: .75, color: '#5f6e7e' });
+      for (let i = 0; i < 5; i++) B.push({ x: X(.25 + i * .12), y: Y(.95), z: .75, sx: .4, sy: .35, sz: .3, color: '#c79a5b' });
+      const z = { x0: X(.36), x1: X(.66), y0: Y(.34), y1: Y(.62) };
+      Z.push({ ...z, kind: 'alert', label: '위험 구역 (로봇 작업 반경)', fill: 'rgba(229,57,53,.13)', stroke: '#e53935', dash: [10, 6] });
+      B.push({ x: z.x1 - .4, y: z.y1 - .4, sx: .55, sy: .55, sz: .5, color: '#e8a33c' },
+             { x: z.x1 - .4, y: z.y1 - .4, z: .5, sx: .2, sy: .2, sz: .9, color: '#e8a33c' },
+             { x: z.x1 - .7, y: z.y1 - .4, z: 1.3, sx: .65, sy: .16, sz: .16, color: '#d48a22' });
+    } else if (k === 'tools') {
+      B.push({ x: X(.03), y: Y(.5), sx: .12, sy: R.D * .6, sz: 1.9, color: '#c3cad3' });
+      for (let i = 0; i < 9; i++) B.push({ x: X(.03) + .1, y: Y(.24) + i * R.D * .065, z: .9 + (i % 3) * .3, sx: .08, sy: .18, sz: .22, color: ['#e53935', '#1e88e5', '#fbc02d'][i % 3] });
+      for (const u of [.3, .62]) B.push({ x: X(u), y: Y(.07), sx: 1.6, sy: .7, sz: .9, color: '#a0754d' },
+                                        { x: X(u), y: Y(.07), z: .9, sx: .5, sy: .3, sz: .25, color: '#455a64' });
+      B.push({ x: X(.92), y: Y(.86), sx: .6, sy: 1.0, sz: 1.9, color: '#d94f3d' });
+      Z.push({ x0: X(.82), x1: X(1), y0: Y(.72), y1: Y(1), kind: 'home', label: '공구 보관함', fill: 'rgba(67,160,71,.12)', stroke: '#43a047', dash: [8, 5] });
+    } else if (k === 'logistics') {
+      Z.push({ x0: X(.05), x1: X(.95), y0: Y(.2), y1: Y(.8), kind: 'lane', label: '', fill: null, stroke: 'rgba(249,168,37,.8)', dash: [14, 10] });
+      Z.push({ x0: X(.86), x1: X(1), y0: Y(.3), y1: Y(.7), kind: 'dock', label: '출고장', fill: 'rgba(251,192,45,.2)', stroke: '#f9a825', dash: [] });
+      const rack = (yv) => {
+        const n = Math.max(2, Math.floor(R.W * .8 / 1.3)), seg = R.W * .8 / n;
+        for (let i = 0; i < n; i++) {
+          const x = X(.1) + (i + .5) * seg;
+          B.push({ x: x - seg / 2 + .05, y: Y(yv), sx: .08, sy: .9, sz: 2.4, color: '#e3702b' }, { x: x + seg / 2 - .05, y: Y(yv), sx: .08, sy: .9, sz: 2.4, color: '#e3702b' });
+          [0.05, .85, 1.65].forEach((z, j) => {
+            B.push({ x, y: Y(yv), z, sx: seg - .1, sy: .9, sz: .06, color: '#2b5c9e' });
+            if ((i + j) % 4 !== 3) B.push({ x, y: Y(yv), z: z + .06, sx: seg - .35, sy: .75, sz: .6, color: ['#c69c6d', '#b5835a', '#d8b48a'][(i + j) % 3] });
+          });
+        }
+      };
+      rack(.05); rack(.95);
+    } else if (k === 'hospital') {
+      const n = Math.max(2, Math.floor(R.W * .75 / 1.5)), seg = R.W * .75 / n;
+      for (let i = 0; i < n; i++) {
+        const x = X(.12) + (i + .5) * seg, y = Y(.05) + .95;
+        B.push({ x, y, sx: .95, sy: 1.95, sz: .55, color: '#f5f7fa' }, { x, y: y - .75, z: .55, sx: .7, sy: .3, sz: .12, color: '#dfe7ef' },
+               { x, y: y + .15, z: .55, sx: .9, sy: 1.0, sz: .06, color: '#8ec5e8' }, { x: x + seg / 2 - .05, y, sx: .04, sy: 1.8, sz: 1.9, color: '#bfe3dc', a: .55 });
+      }
+      B.push({ x: X(.92), y: Y(.6), sx: .7, sy: 1.8, sz: 1.05, color: '#7fb3a8' }, { x: X(.92) - .1, y: Y(.6), z: 1.05, sx: .3, sy: .4, sz: .25, color: '#37474f' });
+      Z.push({ x0: X(.35), x1: X(.65), y0: Y(.88), y1: Y(1), kind: 'alert', label: '출입구', fill: 'rgba(30,136,229,.14)', stroke: '#1e88e5', dash: [8, 5] });
+      Z.push({ x0: X(.86), x1: X(.98), y0: Y(.45), y1: Y(.75), kind: 'label', label: '간호사실', fill: null, stroke: null });
+    } else if (k === 'retail') {
+      const cols = ['#ef5350', '#42a5f5', '#66bb6a', '#ffca28', '#ab47bc'];
+      for (const [nm, x, y, sx, sy] of [['A', X(.07), Y(.5), .7, R.D * .55], ['B', X(.93), Y(.5), .7, R.D * .55], ['C', X(.5), Y(.06), R.W * .5, .7]]) {
+        B.push({ x, y, sx, sy, sz: 1.35, color: '#e9e2d6' });
+        const along = sx > sy, len = along ? sx : sy, n = Math.floor((len - .2) / .35);
+        for (let i = 0; i < n; i++) for (const [j, z] of [[0, .45], [1, .95]]) {
+          const o = -len / 2 + .25 + i * .35;
+          B.push({ x: along ? x + o : x, y: along ? y : y + o, z, sx: along ? .26 : sx + .04, sy: along ? sy + .04 : .26, sz: .3, color: cols[(i + j * 2) % 5] });
+        }
+        Z.push({ x0: x - sx / 2 - .7, x1: x + sx / 2 + .7, y0: y - sy / 2 - .7, y1: y + sy / 2 + .7, kind: 'shelf', name: nm, label: '', top: [x, y, 1.6] });
+      }
+      B.push({ x: X(.5), y: Y(.95), sx: 1.4, sy: .6, sz: 1.0, color: '#546e7a' });
+      Z.push({ x0: X(.35), x1: X(.65), y0: Y(.86), y1: Y(1), kind: 'label', label: '계산대', fill: null, stroke: null });
+    }
+    return { B, Z };
+  }
+  function drawSceneFloor(g, P) {
+    const R = room(); floorRect(g, P, R.x0, R.y0, R.x1, R.y1, SCENES[st.scene].floor, '#c9d2dc');
+  }
+  function drawSceneStatic(g, P, fwd) {
+    const L = layout(st.scene, room());
+    for (const z of L.Z) if (z.fill || z.stroke) floorRect(g, P, z.x0, z.y0, z.x1, z.y1, z.fill, z.stroke, z.dash);
+    for (const z of L.Z) if (z.label) centerLabel(g, P((z.x0 + z.x1) / 2, (z.y0 + z.y1) / 2, .01), z.label, z.stroke || '#455a64');
+    const faces = []; for (const bx of L.B) boxFaces(faces, P, fwd, bx); paint(g, faces);
+    for (const z of L.Z) if (z.kind === 'shelf') centerLabel(g, P(...z.top), '매대 ' + z.name, '#6d4c41');
+  }
+
+  // 태그를 단 대상 (작업자·공구 카트·지게차·환자·쇼핑객) — 진행 방향으로 돌려 그림
+  function heading(t) {
+    const n = t.trail.length;
+    if (n >= 2) { const a = t.trail[n - 2], b = t.trail[n - 1]; if (Math.hypot(b.x - a.x, b.y - a.y) > 0.03) t.hd = Math.atan2(b.y - a.y, b.x - a.x); }
+    return t.hd || 0;
+  }
+  function drawCarrier(g, P, fwd, t) {
+    const x = t.x, y = t.y, yaw = heading(t), c = Math.cos(yaw), s = Math.sin(yaw), parts = [];
+    const part = (lx, ly, lz, sx, sy, sz, color, a) => parts.push({ x: x + c * lx - s * ly, y: y + s * lx + c * ly, z: lz, sx, sy, sz, yaw, color, a });
+    const person = (body) => { part(0, 0, 0, .26, .34, .85, '#37474f'); part(0, 0, .85, .3, .46, .62, body); return 1.47; };
+    let topZ = 1.8, head = null, helmet = null;
+    if (st.scene === 'safety') { const hz = person('#1565c0'); part(0, 0, 1.1, .32, .48, .1, '#ffeb3b'); head = hz + .13; helmet = '#fbc02d'; topZ = hz + .4; }
+    else if (st.scene === 'tools') {
+      part(0, 0, .12, .9, .55, .06, '#c62828'); part(0, 0, .55, .9, .55, .06, '#c62828'); part(0, 0, .9, .9, .55, .32, '#d32f2f');
+      part(-.43, 0, .12, .04, .5, .78, '#9e9e9e'); part(.43, 0, .12, .04, .5, .78, '#9e9e9e'); part(-.55, 0, 1.0, .05, .5, .05, '#616161');
+      part(-.1, 0, 1.22, .3, .12, .08, '#1e88e5'); part(.2, 0, 1.22, .18, .18, .12, '#fbc02d');
+      for (const [lx, ly] of [[-.35, -.22], [.35, -.22], [-.35, .22], [.35, .22]]) part(lx, ly, 0, .12, .06, .12, '#212121');
+      topZ = 1.4;
+    } else if (st.scene === 'logistics') {
+      const k = .85, F = (lx, ly, lz, sx, sy, sz, col) => part(lx * k, ly * k, lz * k, sx * k, sy * k, sz * k, col);
+      F(-.1, 0, .15, 1.3, .8, .6, '#f2b705'); F(-.75, 0, .15, .25, .8, .75, '#424242');
+      for (const [lx, ly] of [[-.55, -.35], [-.55, .35], [.05, -.35], [.05, .35]]) F(lx, ly, .75, .06, .06, 1.1, '#333333');
+      F(-.25, 0, 1.85, .75, .8, .06, '#333333'); F(-.3, 0, .75, .3, .4, .5, '#455a64');
+      F(.62, -.28, 0, .08, .08, 2.1, '#555555'); F(.62, .28, 0, .08, .08, 2.1, '#555555');
+      F(1.05, -.2, .08, .8, .1, .05, '#777777'); F(1.05, .2, .08, .8, .1, .05, '#777777');
+      F(1.05, 0, .14, .9, .85, .12, '#a1887f'); F(1.05, 0, .26, .8, .75, .65, '#c69c6d');
+      for (const [lx, ly] of [[-.5, -.42], [-.5, .42], [.4, -.42], [.4, .42]]) F(lx, ly, 0, .35, .12, .35, '#212121');
+      topZ = 2.05;
+    } else if (st.scene === 'hospital') {
+      const hz = person('#90caf9'); head = hz + .13; topZ = hz + .38;
+      part(.38, 0, 0, .05, .5, .85, '#b0bec5'); part(.38, 0, .85, .07, .56, .05, '#90a4ae');
+    } else if (st.scene === 'retail') {
+      const hz = person('#8e24aa'); head = hz + .13; topZ = hz + .38;
+      part(.75, 0, .3, .7, .5, .5, '#90a4ae', .7); part(.38, 0, .3, .04, .5, .75, '#78909c');
+      for (const [lx, ly] of [[.48, -.2], [1.0, -.2], [.48, .2], [1.0, .2]]) part(lx, ly, 0, .08, .04, .1, '#212121');
+    }
+    const f = P(x, y, 0); g.fillStyle = 'rgba(0,0,0,.16)'; g.beginPath(); g.ellipse(f[0], f[1], 20, 8, 0, 0, 7); g.fill();
+    const faces = []; for (const bx of parts) boxFaces(faces, P, fwd, bx); paint(g, faces);
+    if (head) {
+      const q = P(x, y, head), e = P(x, y, head + .13), r = Math.max(4, Math.abs(q[1] - e[1]));
+      g.fillStyle = '#f1c9a5'; g.beginPath(); g.arc(q[0], q[1], r, 0, 7); g.fill();
+      if (helmet) { g.fillStyle = helmet; g.beginPath(); g.arc(q[0], q[1] - r * .2, r * 1.08, Math.PI, 0); g.fill(); }
+    }
+    return P(x, y, topZ);
+  }
+  // 장면별 매장 열지도 (바닥)
+  function drawHeat(g, P) {
+    const vals = Object.values(st.heat); if (!vals.length) return;
+    const mx = Math.max(...vals);
+    for (const [k, n] of Object.entries(st.heat)) {
+      const [i, j] = k.split(',').map(Number), t = n / mx; if (t < .04) continue;
+      const r = Math.round(255 * Math.min(1, t * 2)), gg = Math.round(200 * (1 - t)), col = `rgba(${r},${gg},60,${.18 + .45 * t})`;
+      floorRect(g, P, i * .5, j * .5, i * .5 + .5, j * .5 + .5, col, null);
+    }
+  }
+  // 장면 안내 카드 + 실시간 상태 (첫 번째 수신 중 태그 기준)
+  function sceneCard(g, w, dt) {
+    const sc = SCENES[st.scene], L = layout(st.scene, room());
+    const t = Object.values(st.tags).find(x => x.x !== undefined && live(x));
+    let msg = '태그 데이터를 기다리는 중…', col = '#5b6b7c';
+    if (t) {
+      const zone = (kind) => L.Z.find(z => z.kind === kind);
+      if (st.scene === 'safety') { const z = zone('alert'), d = rectDist(z, t.x, t.y); [msg, col] = d === 0 ? ['⚠ 위험 구역 진입! — 관리자에게 즉시 알림', '#d32f2f'] : [`위험 구역까지 ${d.toFixed(1)} m · 안전`, '#2e7d32']; }
+      else if (st.scene === 'tools') { const d = rectDist(zone('home'), t.x, t.y); [msg, col] = d === 0 ? ['보관함에 있음', '#2e7d32'] : [`보관함에서 ${d.toFixed(1)} m 떨어진 곳에서 사용 중`, '#1d4e89']; }
+      else if (st.scene === 'logistics') { const d = rectDist(zone('dock'), t.x, t.y); msg = `지게차 이동 거리 ${(t.odo || 0).toFixed(1)} m · 출고장까지 ${d.toFixed(1)} m`; col = '#1d4e89'; }
+      else if (st.scene === 'hospital') { const d = rectDist(zone('alert'), t.x, t.y); [msg, col] = d < 0.8 ? ['⚠ 출입구 접근 — 간호사·보호자에게 알림', '#d32f2f'] : [`병동 안 · 출입구까지 ${d.toFixed(1)} m`, '#2e7d32']; }
+      else if (st.scene === 'retail') {
+        const sh = L.Z.filter(z => z.kind === 'shelf'), near = sh.find(z => rectDist(z, t.x, t.y) === 0);
+        if (near) st.dwell[near.name] = (st.dwell[near.name] || 0) + dt;
+        const top = Object.entries(st.dwell).sort((a, b) => b[1] - a[1])[0];
+        msg = top ? `가장 오래 머문 곳: 매대 ${top[0]} (${Math.round(top[1])}초)${near ? ` · 지금 매대 ${near.name} 앞` : ''}` : '매대 앞에 머무는 시간을 재는 중…'; col = '#6d4c41';
+      }
+    }
+    const x = 10, y = 30, cw = Math.min(w - 20, 430), ch = 66;
+    g.fillStyle = 'rgba(255,255,255,.93)'; g.strokeStyle = '#d7e0ea'; g.lineWidth = 1;
+    g.beginPath(); g.roundRect(x, y, cw, ch, 10); g.fill(); g.stroke();
+    label(g, `${sc.icon} ${sc.name}  (예시 연출)`, x + 12, y + 21, '#0e1a2b', 14, true);
+    label(g, msg, x + 12, y + 41, col, 13, true);
+    label(g, '주변 사물은 예시이고, 움직이는 위치는 실제 장비 데이터입니다', x + 12, y + 58, '#8a99a8', 10.5);
+  }
   function drawCase(g, l, P, fwd) {
     const { v, f, n } = MESH, R = l.Rm, nv = v.length / 3;
     const sx = new Float32Array(nv), sy = new Float32Array(nv), sz = new Float32Array(nv);
@@ -456,10 +690,12 @@
     const g = cache3.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.fillStyle = '#fbfcfe'; g.fillRect(0, 0, w, h);
     const { P, b, fwd } = cam3(w, h);
+    if (st.scene !== 'demo') drawSceneFloor(g, P);
     g.strokeStyle = '#e3e9f0'; g.lineWidth = 1;
     for (let x = Math.floor(b.x0); x <= Math.ceil(b.x1); x++) { const a = P(x, b.y0, 0), c = P(x, b.y1, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(c[0], c[1]); g.stroke(); }
     for (let y = Math.floor(b.y0); y <= Math.ceil(b.y1); y++) { const a = P(b.x0, y, 0), c = P(b.x1, y, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(c[0], c[1]); g.stroke(); }
     label(g, '입체 (3D) · 바닥 격자 1 m', 10, 18, '#8a99a8', 11);
+    if (st.scene !== 'demo') drawSceneStatic(g, P, fwd);
     // 먼 로케이터부터
     const locs = Object.entries(st.locators).sort((a, c) => P(c[1].x, c[1].y, c[1].z)[2] - P(a[1].x, a[1].y, a[1].z)[2]);
     for (const [id, l] of locs) {
@@ -480,13 +716,13 @@
       label(g, `높이 ${l.z.toFixed(1)} m`, top[0] + 26, top[1] + 5, '#5b6b7c', 11);
     }
   }
-  function draw3d(c, rays = false) {
+  function draw3d(c) {
     const { g, w, h, dpr } = fit(c), V = st.v3;
-    const key = [w, h, dpr, V.yaw, V.pitch, V.zoom, V.panX, V.panY, st.placeVer, JSON.stringify(bounds())].join('|');
+    const key = [w, h, dpr, V.yaw, V.pitch, V.zoom, V.panX, V.panY, st.placeVer, st.scene, JSON.stringify(camBounds())].join('|');
     if (key !== cacheKey) { drawStatic3d(w, h, dpr); cacheKey = key; }
     g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(cache3, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const { P } = cam3(w, h);
-    if (rays) drawRays(g, P);
+    const { P, fwd } = cam3(w, h), scene = st.scene !== 'demo';
+    if (scene && st.scene === 'retail') drawHeat(g, P);
     for (const [id, t] of Object.entries(st.tags)) {
       if (t.x === undefined) continue;
       const alpha = live(t) ? 1 : 0.35;
@@ -494,37 +730,78 @@
       t.trail.forEach((p, i) => { const q = P(p.x, p.y, p.z); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.stroke(); g.setLineDash([]);
       const fl = P(t.x, t.y, 0), q = P(t.x, t.y, t.z);
       g.globalAlpha = alpha * 0.35; g.fillStyle = t.color; g.beginPath(); g.ellipse(fl[0], fl[1], 10, 4, 0, 0, 7); g.fill();
-      const ic = drawTagIcon(g, q[0], q[1] - 17, t.color, alpha);
+      let ic, lp = q;
+      if (scene) { g.globalAlpha = alpha; lp = drawCarrier(g, P, fwd, t); ic = drawTagIcon(g, lp[0], lp[1] - 12, t.color, alpha); lp = [lp[0], lp[1] + 5]; }
+      else ic = drawTagIcon(g, q[0], q[1] - 17, t.color, alpha);
       g.globalAlpha = alpha;
-      label(g, `태그 ${short(id)}`, q[0] + ic.w / 2 + 8, q[1] - 20, t.color, 13, true);
-      label(g, `(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)}) m`, q[0] + ic.w / 2 + 8, q[1] - 5, '#5b6b7c', 11);
+      label(g, `태그 ${short(id)}`, lp[0] + ic.w / 2 + 8, lp[1] - 20, t.color, 13, true);
+      label(g, `(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)}) m`, lp[0] + ic.w / 2 + 8, lp[1] - 5, '#5b6b7c', 11);
       g.globalAlpha = 1;
     }
     label(g, '드래그: 돌려 보기 · 휠: 확대', 10, h - 10, '#8a99a8', 11);
-    if (rays) label(g, '선 = 로케이터가 잰 태그 방향 (여러 선이 만나는 곳이 태그 위치)', 10, 36, '#37474f', 12, true);
+    if (scene) { const now = performance.now(); sceneCard(g, w, Math.min(1, (now - (st.lastFrame || now)) / 1000)); st.lastFrame = now; }
   }
 
-  // 방향 광선: 로케이터 좌표축의 측정 방향 (cos el·cos az, cos el·sin az, sin el) → 자세 R(데이터)로 방 좌표
-  // 태그 높이(모르면 바닥)까지 연장 · 선택한 로케이터는 굵게
-  function drawRays(g, P) {
-    const now = Date.now();
-    for (const [lid, byTag] of Object.entries(st.angles)) {
-      const l = st.locators[lid]; if (!l) continue;
-      const sel = lid === st.selLoc;
-      for (const [tag, arr] of Object.entries(byTag)) {
-        const s = arr[arr.length - 1]; if (!s || now - s.t > SLEEP_MS) continue;
-        const az = s.az * Math.PI / 180, el = s.el * Math.PI / 180, R = l.R;
-        const v = [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)];
-        const d = [R[0] * v[0] + R[1] * v[1] + R[2] * v[2], R[3] * v[0] + R[4] * v[1] + R[5] * v[2], R[6] * v[0] + R[7] * v[1] + R[8] * v[2]];
-        const tz = st.tags[tag]?.z ?? 0;
-        let k = d[2] < -0.05 ? (tz - l.z) / d[2] : 6; k = Math.max(0.3, Math.min(12, k));
-        const a = P(l.x, l.y, l.z), b = P(l.x + d[0] * k, l.y + d[1] * k, l.z + d[2] * k);
-        g.globalAlpha = sel ? 0.95 : 0.55; g.strokeStyle = colorOf(tag); g.lineWidth = sel ? 3 : 1.6; g.setLineDash(sel ? [] : [6, 4]);
-        g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.setLineDash([]);
-        g.fillStyle = colorOf(tag); g.beginPath(); g.arc(b[0], b[1], sel ? 4 : 3, 0, 7); g.fill();
-        g.globalAlpha = 1;
+
+  // ── 방향 감지 3D — 설치·검증 도구 AOA 탭의 3D 화면과 같은 구성 ───────────
+  // 로케이터 한 대 기준: 안테나 판(실물 케이스)이 바닥, 정면(+z)이 위. 화살표 = 태그 방향,
+  // 판 위 점선 = 방위, 세로 점선 = 앙각. [실제 설치 방향으로 보기]면 위치 설정 자세로 돌린다.
+  const IDENT = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  const dirOf = (az, el) => { const a = az * Math.PI / 180, e = el * Math.PI / 180; return [Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e)]; };
+  function drawAoa3d(c) {
+    const { g, w, h } = fit(c), V = st.va;
+    g.fillStyle = '#fbfcfe'; g.fillRect(0, 0, w, h);
+    const loc = st.selLoc, l = loc && st.locators[loc], world = V.world && !!l;
+    const s = Math.min(w, h) * 0.36 * V.zoom, cy = Math.cos(V.yaw), sy = Math.sin(V.yaw), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+    const P0 = (x, y, z) => {
+      const xr = x * cy - y * sy, yr = x * sy + y * cy, yv = yr * cp - z * sp, zv = yr * sp + z * cp, k = 1 / (1 + yv * 0.12);
+      return [w / 2 + xr * s * k, h * 0.58 - zv * s * k, yv];
+    };
+    const fwd = [sy * cp, cy * cp, -sp];
+    if (world) {   // 방 바닥 격자로 위아래 감 잡기
+      g.strokeStyle = '#e3e9f0'; g.lineWidth = 1;
+      for (let i = -2; i <= 2; i++) {
+        let a = P0(i * .5, -1, -1.1), b = P0(i * .5, 1, -1.1); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+        a = P0(-1, i * .5, -1.1); b = P0(1, i * .5, -1.1); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
       }
+      const q = P0(1, -1, -1.1); label(g, '방 바닥', q[0], q[1], '#8a99a8', 10);
     }
+    const R = world ? l.R : IDENT;
+    const P = (x, y, z) => P0(R[0] * x + R[1] * y + R[2] * z, R[3] * x + R[4] * y + R[5] * z, R[6] * x + R[7] * y + R[8] * z);
+    const Pv = (v, k = 1) => P(v[0] * k, v[1] * k, v[2] * k);
+    const poly = (pts, col, lw = 1) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.stroke(); };
+    // 앙각 반구 가이드: 판 평면 원(0°) + 30°/60° 위도선 + 방위 30° 경선
+    for (const el of [0, 30, 60]) { const pts = []; for (let d = 0; d <= 360; d += 6) pts.push(Pv(dirOf(d, el))); poly(pts, el ? '#e3e9f0' : 'rgba(28,39,51,.35)'); }
+    for (let d = 0; d < 360; d += 30) {
+      const pts = []; for (let e = 0; e <= 90; e += 6) pts.push(Pv(dirOf(d, e))); poly(pts, '#e3e9f0');
+      centerLabel(g, Pv(dirOf(d, 0), 1.12), d + '°', '#546e7a', 10);
+    }
+    // 실물 케이스 (판 뒤쪽으로 몸통) — 자세는 그림용(Rm: 케이스 그림만 180° 반영)
+    if (MESH) drawCase(g, { x: 0, y: 0, z: 0, Rm: world ? l.Rm : IDENT }, P0, fwd);
+    // 보드 축: x(방위 0°) 빨강 · y(방위 90°) 초록 · 정면(앙각 90°) 남색
+    const o = P(0, 0, 0);
+    for (const [v, col, nm] of [[[.75, 0, 0], '#d32f2f', 'x · 방위 0°'], [[0, .75, 0], '#2e7d32', 'y · 방위 90°'], [[0, 0, .75], '#283593', '정면 · 앙각 90°']]) {
+      const e = Pv(v); poly([o, e], col, 2.2); label(g, nm, e[0] + 4, e[1] - 6, col, 11, true);
+    }
+    // 태그 방향
+    const series = (loc && st.angles[loc]) || {}, many = Object.values(series).filter(a => a.length).length > 1, now = Date.now();
+    for (const [tag, arr] of Object.entries(series)) {
+      if (!arr.length) continue;
+      const col = colorOf(tag), last = arr[arr.length - 1], stale = now - last.t > SLEEP_MS;
+      arr.slice(-30).forEach((q, i, A) => { const t = Pv(dirOf(q.az, q.el)); g.globalAlpha = .12 + .3 * (i + 1) / A.length; g.fillStyle = col; g.beginPath(); g.arc(t[0], t[1], 2.5, 0, 7); g.fill(); });
+      g.globalAlpha = stale ? .35 : 1;
+      const v = dirOf(last.az, last.el), tip = Pv(v), foot = P(v[0], v[1], 0);
+      g.setLineDash([5, 4]); poly([o, foot], col, 1.4); poly([foot, tip], col, 1.4); g.setLineDash([]);
+      g.lineCap = 'round'; poly([o, tip], col, 3); g.lineCap = 'butt';
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(tip[0], tip[1], 7, 0, 7); g.fill();
+      g.fillStyle = col; g.beginPath(); g.arc(tip[0], tip[1], 5, 0, 7); g.fill();
+      const nm = many ? short(tag) + ' ' : '';
+      label(g, `${nm}방위 ${last.az.toFixed(0)}°`, foot[0] + 6, foot[1] + 14, '#263238', 12, true);
+      label(g, `${nm}앙각 ${last.el.toFixed(0)}°`, tip[0] + 9, tip[1] - 8, '#263238', 12, true);
+      g.globalAlpha = 1;
+    }
+    label(g, loc ? `로케이터 ${short(loc)} 가 본 태그 방향 (3D)` : '로케이터를 고르세요', 10, 20, '#263238', 13, true);
+    label(g, `드래그: 시점 회전 · ${world ? '실제 설치 방향 (위치 설정 자세)' : '로케이터 기준 (안테나 판이 바닥)'}`, 10, h - 10, '#8a99a8', 11);
   }
 
   // ── 방향 감지 (AOA): 로케이터별 방위·앙각 원 + 흐르는 그래프 ───────────
@@ -585,7 +862,7 @@
     '2d': '위에서 내려다본 지도입니다. 태그 그림이 있는 곳이 지금 위치이고, 점선은 지나온 길이에요. (드래그: 이동 · 휠: 확대)',
     '3d': '로케이터의 실제 모양과 설치 높이까지 입체로 봅니다. 파란 선은 로케이터가 바라보는 방향이에요. 드래그해서 돌려 보세요.',
     'both': '평면도와 입체 화면을 나란히 봅니다. 같은 태그가 두 화면에서 함께 움직입니다.',
-    'aoa': '로케이터마다 "태그가 어느 쪽에 있는지"를 각도로 잰 결과입니다. 왼쪽 입체 화면의 선이 그 방향이고, 여러 선이 만나는 곳이 태그 위치예요. 오른쪽에서 고른 로케이터의 각도 변화를 봅니다.',
+    'aoa': '로케이터 한 대가 "태그가 어느 쪽에 있는지"를 각도로 잰 결과입니다. 왼쪽 입체 화면의 화살표가 태그 방향(판 위 점선 = 좌우 방위, 세로 점선 = 높낮이 앙각)이에요. 오른쪽에서 로케이터를 고르세요.',
   };
   const stage = document.getElementById('stage'), desc = document.getElementById('desc');
   const setView = (v) => {
@@ -593,14 +870,25 @@
     document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.view === v));
   };
   document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setView(b.dataset.view));
+  const setScene = (k, jump) => {
+    if (!SCENES[k]) return;
+    st.scene = k; st.dwell = {};
+    document.querySelectorAll('[data-scene]').forEach(x => x.classList.toggle('on', x.dataset.scene === k));
+    if (st.view === '2d' || (st.view === 'aoa' && k !== 'demo')) setView('3d');
+    desc.textContent = k === 'demo' ? DESC[st.view] : SCENES[k].desc + ' (드래그해서 돌려 보세요)';
+    if (jump) document.querySelector('.bar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  document.querySelectorAll('[data-scene]').forEach(b => b.onclick = () => setScene(b.dataset.scene, !!b.closest('.uses')));
   setView(['2d', '3d', 'both', 'aoa'].includes(params.get('view')) ? params.get('view') : '3d');
+  if (params.get('scene')) setScene(params.get('scene'));
   let drag = null;
   const aoa3 = document.getElementById('aoa3');
-  const which = (e) => (e.target === cv3 || e.target === aoa3) ? 'v3' : e.target === cv2 ? 'v2' : null;
+  const which = (e) => e.target === aoa3 ? 'va' : e.target === cv3 ? 'v3' : e.target === cv2 ? 'v2' : null;
+  document.getElementById('aoaWorld').onchange = (e) => { st.va.world = e.target.checked; };
   stage.addEventListener('pointerdown', e => { const k = which(e); if (!k) return; drag = { k, x: e.clientX, y: e.clientY }; stage.setPointerCapture(e.pointerId); });
   stage.addEventListener('pointermove', e => {
     if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
-    if (drag.k === 'v3') { st.v3.yaw += dx * 0.008; st.v3.pitch = Math.max(0.15, Math.min(1.5, st.v3.pitch + dy * 0.008)); }
+    if (drag.k === 'v3' || drag.k === 'va') { const V = st[drag.k]; V.yaw += dx * 0.008; V.pitch = Math.max(0.1, Math.min(1.5, V.pitch + dy * 0.008)); }
     else { st.v2.panX += dx; st.v2.panY += dy; }
   });
   stage.addEventListener('pointerup', () => drag = null);
@@ -643,7 +931,7 @@
     cv3.style.display = (v === '3d' || v === 'both') ? '' : 'none';
     if (v === '2d' || v === 'both') draw2d(cv2);
     if (v === '3d' || v === 'both') draw3d(cv3);
-    if (isAoa) { draw3d(aoa3, true); drawAoa(); }
+    if (isAoa) { drawAoa3d(aoa3); drawAoa(); }
     const hasPos = Object.keys(st.tags).length > 0, hasAng = Object.keys(st.angles).length > 0;
     empty.style.display = isAoa ? (hasAng ? 'none' : '') : (hasPos || Object.keys(st.locators).length ? 'none' : '');
     empty.className = isAoa ? 'empty banner' : 'empty';
