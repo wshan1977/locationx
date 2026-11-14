@@ -171,6 +171,7 @@
     </div>
     <span class="chip"><span id="cdot" class="dot"></span><span id="ctext">연결 중…</span></span>
     <span class="chip" id="age">마지막 수신 —</span>
+    <span class="chip" id="viewers" title="이 데모 페이지를 지금 열어 둔 사람 수 (나 포함)">👀 보는 사람 —</span>
   </div>
   <p class="desc" id="desc"></p>
   <div class="scenes" id="scenes"><span>활용 예시 공간</span>
@@ -247,6 +248,7 @@
     tagOrder: [],
     angles: {},            // loc -> tag -> [{t,az,el}]
     devices: {},           // deviceId -> status
+    viewers: {},           // 보는 사람 id -> 마지막 신호 받은 시각
     lastTs: 0, connected: false,
     view: '3d', selLoc: null, scene: 'demo', heat: {}, dwell: {},
     v2: { zoom: 1, panX: 0, panY: 0 },
@@ -290,15 +292,22 @@
 
   // ── MQTT ───────────────────────────────────────────────────────────────
   const cdot = document.getElementById('cdot'), ctext = document.getElementById('ctext');
+  // 보는 사람 수: 페이지마다 무작위 id로 10초마다 신호(viewers/<id>) → 서로 세어 35초 안에 신호 온 수를 표시
+  // (개인 정보 없음 · 보관(retain) 안 함 · 숨긴 탭은 브라우저가 타이머를 늦춰 자연히 빠짐)
+  const VIEWER_ID = Math.random().toString(16).slice(2, 10), VIEWER_TTL = 35000;
   const client = mqtt.connect(BROKER, {
-    clientId: 'lx-web-' + Math.random().toString(16).slice(2, 10),
+    clientId: 'lx-web-' + VIEWER_ID,
     clean: true, connectTimeout: 10000, reconnectPeriod: 4000,
   });
   client.on('connect', () => {
     st.connected = true;
     client.subscribe([PREFIX + 'placements', PREFIX + 'status/+', PREFIX + 'agent',
-                      PREFIX + '+/aoa/position/#', PREFIX + '+/aoa/angle/#'], { qos: 0 });
+                      PREFIX + '+/aoa/position/#', PREFIX + '+/aoa/angle/#', PREFIX + 'viewers/+'], { qos: 0 });
+    beat();
   });
+  const beat = (bye) => { if (client.connected) client.publish(PREFIX + 'viewers/' + VIEWER_ID, JSON.stringify(bye ? { bye: 1 } : { on: 1 }), { qos: 0, retain: false }); };
+  setInterval(beat, 10000);
+  addEventListener('pagehide', () => beat(true));
   client.on('close', () => { st.connected = false; });
   client.on('error', () => { st.connected = false; });
   client.on('message', (topic, buf) => {
@@ -317,6 +326,7 @@
     }
     if (rest[0] === 'status') { st.devices[rest[1]] = d; return; }
     if (rest[0] === 'agent') return;
+    if (rest[0] === 'viewers') { if (d.bye) delete st.viewers[rest[1]]; else st.viewers[rest[1]] = now; return; }
     // <root>/aoa/position/<group>/<tag>  ·  <root>/aoa/angle/<loc>/<tag>
     if (rest[1] !== 'aoa') return;
     if (rest[2] === 'position' && rest.length >= 5) {
@@ -923,6 +933,8 @@
     else if (age !== null && age < 10) { cdot.className = 'dot ok'; ctext.textContent = '실시간 수신 중'; }
     else { cdot.className = 'dot warn'; ctext.textContent = '연결됨 · 데이터 대기'; }
     document.getElementById('age').textContent = age === null ? '마지막 수신 —' : `마지막 수신 ${age < 1 ? '방금' : Math.round(age) + '초 전'}`;
+    const now = Date.now(), n = Object.values(st.viewers).filter(t => now - t < VIEWER_TTL).length;
+    document.getElementById('viewers').textContent = n ? `👀 지금 ${n}명이 보는 중` : '👀 보는 사람 —';
   }
   function frame() {
     const v = st.view, isAoa = v === 'aoa';
