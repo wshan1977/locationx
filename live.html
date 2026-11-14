@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LocationX 실시간 데모</title>
-<meta name="description" content="LocationX BLE AoA 실내측위 실시간 데모 — 실제 현장 장비의 태그 위치(AOD)와 방향각(AOA)을 브라우저에서 확인합니다.">
+<meta name="description" content="LocationX 실내 위치추적 시스템 실시간 데모 — 실제 현장에 설치된 장비가 계산한 태그 위치를 평면도·입체(3D)로, 방향 각도까지 브라우저에서 확인합니다.">
+<meta property="og:title" content="LocationX 실시간 데모 — 실내 위치추적을 지금 확인하세요">
+<meta property="og:image" content="https://wshan1977.github.io/locationx/images/live_og.jpg">
+<meta property="og:description" content="천장에 로케이터, 사람·물건에 태그. 실제 장비가 계산한 위치를 실시간으로 보여 드립니다.">
 <style>
   :root {
     --navy: #0e1a2b; --navy2: #16263c; --accent: #2f81f7; --accent2: #58e6c8;
@@ -21,25 +24,52 @@
   nav .links { margin-left: auto; display: flex; gap: 16px; }
   nav .links a { color: #c9d6e4; font-size: 14px; }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
-  header { padding: 22px 0 10px; }
-  h1 { font-size: 24px; }
-  .lead { color: var(--sub); font-size: 14px; margin-top: 4px; }
-  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0 10px; }
-  .tabs { display: flex; background: #e9eef4; border-radius: 10px; padding: 3px; }
+
+  /* 제품 소개 (처음 온 사람용) */
+  .intro { background: linear-gradient(135deg, #0e1a2b 0%, #16345c 60%, #1f4f8a 100%); color: #fff; }
+  .intro .wrap { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: center; padding-top: 30px; padding-bottom: 30px; }
+  .intro .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700;
+                 background: rgba(88,230,200,.14); color: var(--accent2); padding: 4px 11px; border-radius: 999px; }
+  .intro h1 { font-size: 28px; line-height: 1.35; margin: 10px 0 8px; }
+  .intro p { color: #c9d6e4; font-size: 14.5px; }
+  .intro p b { color: #fff; }
+  .intro .uses { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .intro .uses span { font-size: 12.5px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+                      padding: 3px 10px; border-radius: 999px; color: #e3ecf6; }
+  .intro .cta { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .intro .cta a { font-size: 14px; font-weight: 700; padding: 9px 16px; border-radius: 10px; }
+  .intro .cta .p { background: #fff; color: var(--navy); }
+  .intro .cta .s { border: 1px solid rgba(255,255,255,.35); color: #fff; }
+  .kit { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .kit figure { background: rgba(255,255,255,.96); border-radius: 14px; padding: 12px 10px 10px; text-align: center; color: var(--ink); }
+  .kit img { height: 86px; width: 100%; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .kit b { display: block; font-size: 13.5px; }
+  .kit small { display: block; font-size: 11.5px; color: var(--sub); line-height: 1.45; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;
+              animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); } 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 6px; }
+  .tabs { display: flex; flex-wrap: wrap; background: #e9eef4; border-radius: 10px; padding: 3px; }
   .tabs button { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px;
                  font: inherit; font-size: 14px; color: var(--sub); cursor: pointer; }
   .tabs button.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .desc { font-size: 13.5px; color: var(--sub); margin: 0 0 10px; min-height: 22px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px 10px;
           border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--sub); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #b0bccb; }
   .dot.ok { background: #22a06b; } .dot.warn { background: #e2a03f; } .dot.bad { background: #d64545; }
-  .grid { display: grid; grid-template-columns: 1fr 260px; gap: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 270px; gap: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
-  .stage { position: relative; height: 560px; overflow: hidden; touch-action: none; }
-  .stage canvas { width: 100%; height: 100%; display: block; }
-  .hint { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--sub); }
+  .stage { position: relative; height: 580px; overflow: hidden; touch-action: none; }
+  .views { display: flex; height: 100%; }
+  .views canvas { flex: 1; min-width: 0; height: 100%; display: block; }
+  .views canvas + canvas { border-left: 1px solid var(--line); }
   .side { padding: 14px; font-size: 13px; }
   .side h3 { font-size: 13px; color: var(--sub); margin-bottom: 8px; }
+  .legend { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
+  .legend img { width: 42px; height: 42px; object-fit: contain; flex: none; }
+  .legend b { font-size: 13px; } .legend small { display: block; color: var(--sub); font-size: 12px; line-height: 1.45; }
   .tag { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
   .tag:last-child { border-bottom: 0; }
   .tag .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
@@ -50,17 +80,30 @@
                  font: inherit; font-size: 13px; cursor: pointer; }
   .locs button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
   .aoa { display: grid; grid-template-columns: minmax(260px, 1fr) 1.3fr; gap: 10px; height: 100%; padding: 10px; }
-  .aoa canvas { border-radius: 10px; }
-  .charts { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; }
+  .aoa canvas { border-radius: 10px; width: 100%; height: 100%; display: block; }
+  .charts { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; min-height: 0; }
   .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
            text-align: center; color: var(--sub); font-size: 14px; padding: 20px; pointer-events: none; }
   .empty.banner { inset: 10px 10px auto 10px; height: auto; background: #fff8e6; border: 1px solid #f3dca6;
                   border-radius: 10px; padding: 10px 14px; color: #7a5a12; }
+
+  .ref { margin-top: 16px; padding: 18px; }
+  .ref h2 { font-size: 17px; }
+  .ref > p { color: var(--sub); font-size: 13.5px; margin: 4px 0 12px; }
+  .refgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .refgrid figure { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+  .refgrid img { width: 100%; height: 210px; object-fit: contain; background: #fbfcfe; display: block; padding: 8px; }
+  .refgrid figcaption { font-size: 12.5px; color: var(--sub); padding: 8px 10px; border-top: 1px solid var(--line); }
+  .refgrid figcaption b { color: var(--ink); display: block; font-size: 13px; }
   footer { color: var(--sub); font-size: 12.5px; padding: 18px 0 30px; }
-  @media (max-width: 860px) {
+  @media (max-width: 900px) {
+    .intro .wrap { grid-template-columns: 1fr; }
     .grid { grid-template-columns: 1fr; }
-    .stage { height: 420px; }
-    .aoa { grid-template-columns: 1fr; grid-template-rows: 240px 1fr; }
+    .stage { height: 440px; }
+    .views { flex-direction: column; }
+    .views canvas + canvas { border-left: 0; border-top: 1px solid var(--line); }
+    .aoa { grid-template-columns: 1fr; grid-template-rows: 220px 1fr; }
+    .refgrid { grid-template-columns: 1fr; }
     nav .links { display: none; }
   }
 </style>
@@ -69,82 +112,144 @@
 <nav><div class="wrap">
   <a class="logo" href="index.html">Location<b>X</b></a>
   <div class="links">
-    <a href="index.html">브로셔</a><a href="guide.html">설치 가이드</a>
-    <a href="https://www.control-bit.com/products/locationx.html" target="_blank">제품 페이지</a>
+    <a href="index.html">제품 소개</a><a href="guide.html">설치 가이드</a>
+    <a href="https://www.control-bit.com/products/locationx.html" target="_blank">컨트롤비트 제품 페이지</a>
   </div>
 </div></nav>
 
-<div class="wrap">
-  <header>
-    <h1>LocationX 실시간 데모</h1>
-    <p class="lead">실제 현장에 설치된 로케이터 4대가 계산한 태그 위치(AOD)와 방향각(AOA)을 인터넷으로 중계해 보여 줍니다.</p>
-  </header>
+<section class="intro"><div class="wrap">
+  <div>
+    <span class="pill"><span class="live-dot"></span>실제 장비 · 실시간 연결</span>
+    <h1>LocationX 실내 위치추적 시스템<br>지금 실제로 동작하는 모습입니다</h1>
+    <p>GPS가 닿지 않는 실내에서 사람·물건의 위치를 실시간으로 찾아 줍니다. 천장이나 벽에 <b>로케이터</b>를 달고,
+       찾고 싶은 대상에 작은 <b>태그</b>를 붙이면 로케이터가 태그 신호(블루투스)가 오는 방향을 재서 위치를 계산합니다.
+       아래 화면은 컨트롤비트에 설치된 실제 장비의 데이터입니다.</p>
+    <div class="uses"><span>작업자 안전·위치 관제</span><span>공구·자산 추적</span><span>물류·창고 동선</span><span>병원·요양 시설</span><span>전시·매장 분석</span></div>
+    <div class="cta">
+      <a class="p" href="https://www.control-bit.com/contact.html" target="_blank">도입·개발킷 문의</a>
+      <a class="s" href="https://www.control-bit.com/products/locationx.html" target="_blank">제품 자세히 보기</a>
+    </div>
+  </div>
+  <div class="kit">
+    <figure><img src="images/locator_CB-AOAAOD-L-POE2601.png" alt="LocationX 로케이터"><b>로케이터</b><small>천장·벽에 설치하는 수신기<br>태그 방향 측정 · 랜선 1가닥(PoE)</small></figure>
+    <figure><img src="images/tag_CB-AOAAOD-Tag-Hart_case.png" alt="LocationX 태그"><b>태그</b><small>사람·물건에 붙이는 발신기<br>저전력 · 무선 업데이트</small></figure>
+    <figure><img src="images/tool_aod_3d.png" alt="설치·검증 도구 화면" style="object-fit:cover;border-radius:6px"><b>서버 + 소프트웨어</b><small>위치 계산 · 설치 도구<br>내 시스템과 연동(MQTT)</small></figure>
+  </div>
+</div></section>
 
+<div class="wrap">
   <div class="bar">
     <div class="tabs" role="tablist">
-      <button class="on" data-view="2d">AOD 2D 보기</button>
-      <button data-view="3d">AOD 3D 보기</button>
-      <button data-view="aoa">AOA 보기</button>
+      <button class="on" data-view="2d">평면도</button>
+      <button data-view="3d">입체 (3D)</button>
+      <button data-view="both">평면도 + 입체 같이</button>
+      <button data-view="aoa">방향 감지</button>
     </div>
     <span class="chip"><span id="cdot" class="dot"></span><span id="ctext">연결 중…</span></span>
     <span class="chip" id="age">마지막 수신 —</span>
   </div>
+  <p class="desc" id="desc"></p>
 
   <div class="grid">
     <div class="card stage" id="stage">
-      <canvas id="cv"></canvas>
+      <div class="views" id="views"><canvas id="cv2"></canvas><canvas id="cv3"></canvas></div>
       <div class="aoa" id="aoaWrap" style="display:none">
         <canvas id="dial"></canvas>
         <div class="charts"><canvas id="chAz"></canvas><canvas id="chEl"></canvas></div>
       </div>
-      <div class="hint" id="hint"></div>
       <div class="empty" id="empty">데이터를 기다리는 중입니다…</div>
     </div>
     <div class="card side">
+      <h3>화면 보는 법</h3>
+      <div class="legend"><img src="images/locator_CB-AOAAOD-L-POE2601.png" alt=""><div><b>로케이터</b><small>천장·벽의 수신기. 태그가 어느 방향에 있는지 잽니다.</small></div></div>
+      <div class="legend" style="margin-bottom:10px"><img src="images/tag_CB-AOAAOD-Tag-Hart_case.png" alt=""><div><b>태그</b><small>찾고 싶은 사람·물건에 붙이는 발신기. 그림이 있는 곳이 지금 위치예요.</small></div></div>
       <div id="locBox" style="display:none">
         <h3>로케이터 선택</h3>
         <div class="locs" id="locs"></div>
       </div>
       <h3>태그</h3>
       <div id="tags"><span style="color:var(--sub)">수신된 태그 없음</span></div>
-      <h3 style="margin-top:14px">장비</h3>
+      <h3 style="margin-top:14px">장비 상태</h3>
       <div id="devs" style="color:var(--sub)">—</div>
     </div>
   </div>
 
+  <section class="card ref">
+    <h2>이렇게 설치합니다 (참고)</h2>
+    <p>로케이터는 보통 2~4 m 간격으로 천장(또는 벽 높은 곳)에 달고, 랜선 한 가닥(PoE)으로 전원과 통신을 함께 연결합니다. 아래는 일반적인 설치 예시입니다.</p>
+    <div class="refgrid">
+      <figure><img src="images/guide_install_infra.png" alt="장비 연결 구성"><figcaption><b>장비 연결</b>로케이터 → PoE 스위치 → 위치 계산 서버 → 관제·내 시스템</figcaption></figure>
+      <figure><img src="images/guide_coord_room.png" alt="설치 자세"><figcaption><b>천장·벽 설치</b>천장은 안테나 면이 바닥을, 벽은 방 안쪽을 향하게 답니다</figcaption></figure>
+      <figure><img src="images/guide_coord_angles.png" alt="방향 측정"><figcaption><b>로케이터가 재는 것</b>태그가 있는 방향(좌우·높낮이 각도) — 여러 대를 합쳐 위치 계산</figcaption></figure>
+    </div>
+  </section>
+
   <footer>
     데모 장비는 상시 켜져 있지 않을 수 있습니다. 데이터가 없으면 잠시 후 다시 확인하거나 상담 시 요청해 주세요.<br>
-    전송: 현장 서버 카드 → 공개 MQTT 브로커(broker.hivemq.com) → 이 페이지(WebSocket). 위치 갱신은 초당 수 회로 솎아 보냅니다.
-    · <a href="https://github.com/wshan1977/locationx-sdk" target="_blank">연동 SDK</a>
+    전송: 현장 서버 → 공개 MQTT 브로커(broker.hivemq.com) → 이 페이지(WebSocket). 위치 갱신은 초당 수 회로 솎아 보냅니다.
+    · <a href="https://github.com/wshan1977/locationx-sdk" target="_blank">개발자용 연동 SDK</a>
   </footer>
 </div>
 
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
 (() => {
-  // ── 설정: ?site=<외부 토픽 이름>로 다른 현장도 볼 수 있음 ─────────────────
+  // ── 설정: ?site=<외부 토픽 이름>로 다른 현장도 볼 수 있음 · ?flip=7924,7ACD 로 케이스 그림만 180° ──
   const params = new URLSearchParams(location.search);
   const SITE = params.get('site') || 'lx-abece602';
   const BROKER = params.get('broker') || 'wss://broker.hivemq.com:8884/mqtt';
+  const FLIP = (params.get('flip') || '').toUpperCase().split(',').filter(Boolean);
   const PREFIX = `locationx/${SITE}/`;
   const PALETTE = ['#e53935', '#5e35b1', '#43a047', '#6d4c41', '#d81b60', '#3949ab'];
   const SLEEP_MS = 10000, KEEP_MS = 60000;
+  const CASE_SCALE = 3.0;   // 케이스 실측(18.5 cm)은 방 크기 화면에서 작아 키워 그림 (도구와 같은 취지)
 
   const st = {
-    locators: {},          // id -> {x,y,z, ori}
+    locators: {},          // id -> {x,y,z, ori, flip, R, Rm}
+    placeVer: 0,
     tags: {},              // id -> {x,y,z,sd,ts,trail:[], color}
     tagOrder: [],
     angles: {},            // loc -> tag -> [{t,az,el}]
     devices: {},           // deviceId -> status
     lastTs: 0, connected: false,
     view: '2d', selLoc: null,
-    yaw: -0.7, pitch: 0.95, zoom: 1, panX: 0, panY: 0,
+    v2: { zoom: 1, panX: 0, panY: 0 },
+    v3: { yaw: -0.7, pitch: 0.95, zoom: 1, panX: 0, panY: 0 },
   };
   const short = (id) => id.slice(-4);
   const colorOf = (tag) => {
     if (!st.tagOrder.includes(tag)) st.tagOrder.push(tag);
     return PALETTE[st.tagOrder.indexOf(tag) % PALETTE.length];
   };
+
+  // ── 이미지 · 케이스 3D 모델 ────────────────────────────────────────────
+  const img = (src) => { const i = new Image(); i.src = src; return i; };
+  const LOC_IMG = img('images/locator_CB-AOAAOD-L-POE2601.png');
+  const TAG_IMG = img('images/tag_CB-AOAAOD-Tag-Hart_case.png');
+  let MESH = null;   // {v: Float32Array (m, 보드 로컬), f: Uint16Array, n: Float32Array}
+  fetch('models/locator_case.json').then(r => r.json()).then(m => {
+    const v = new Float32Array(m.v.length);
+    for (let i = 0; i < v.length; i++) v[i] = m.v[i] / 1000 * CASE_SCALE;
+    const f = Uint16Array.from(m.f), n = new Float32Array(f.length);
+    for (let t = 0; t < f.length; t += 3) {
+      const a = f[t] * 3, b = f[t + 1] * 3, c = f[t + 2] * 3;
+      const ux = v[b] - v[a], uy = v[b + 1] - v[a + 1], uz = v[b + 2] - v[a + 2];
+      const wx = v[c] - v[a], wy = v[c + 1] - v[a + 1], wz = v[c + 2] - v[a + 2];
+      const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+      const l = Math.hypot(nx, ny, nz) || 1; n[t] = nx / l; n[t + 1] = ny / l; n[t + 2] = nz / l;
+    }
+    MESH = { v, f, n }; st.placeVer++;
+  }).catch(() => {});
+
+  // 로케이터 자세 (도) → 회전행렬 R = Rz·Ry·Rx (row-major) · flip = 면 안에서 180° (그림만)
+  function rotOf(o, flip) {
+    const a = (o?.x || 0) * Math.PI / 180, b = (o?.y || 0) * Math.PI / 180, c = (o?.z || 0) * Math.PI / 180;
+    const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+    const r = [cc * cb, cc * sb * sa - sc * ca, cc * sb * ca + sc * sa,
+               sc * cb, sc * sb * sa + cc * ca, sc * sb * ca - cc * sa,
+               -sb, cb * sa, cb * ca];
+    return flip ? [-r[0], -r[1], r[2], -r[3], -r[4], r[5], -r[6], -r[7], r[8]] : r;
+  }
 
   // ── MQTT ───────────────────────────────────────────────────────────────
   const cdot = document.getElementById('cdot'), ctext = document.getElementById('ctext');
@@ -165,7 +270,12 @@
     const now = Date.now();
     if (rest[0] === 'placements') {
       st.locators = {};
-      for (const l of d.locators || []) st.locators[l.id] = { ...l.coordinate, ori: l.orientation };
+      for (const l of d.locators || []) {
+        const flip = l.imageFlip === true || FLIP.includes(short(l.id).toUpperCase());
+        st.locators[l.id] = { ...l.coordinate, ori: l.orientation, flip,
+                              R: rotOf(l.orientation, false), Rm: rotOf(l.orientation, flip) };
+      }
+      st.placeVer++;
       return;
     }
     if (rest[0] === 'status') { st.devices[rest[1]] = d; return; }
@@ -194,14 +304,14 @@
   });
 
   // ── 공통 캔버스 ────────────────────────────────────────────────────────
-  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const cv2 = document.getElementById('cv2'), cv3 = document.getElementById('cv3');
   function fit(c) {
     const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
     if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) {
       c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
     }
     const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { g, w: r.width, h: r.height };
+    return { g, w: r.width, h: r.height, dpr };
   }
   function bounds() {
     const pts = [...Object.values(st.locators), ...Object.values(st.tags).filter(t => t.x !== undefined)];
@@ -216,89 +326,163 @@
     g.fillStyle = color; g.fillText(s, x, y);
   };
   const live = (t) => Date.now() - t.ts < SLEEP_MS;
+  const ready = (i) => i.complete && i.naturalWidth > 0;
 
-  // ── AOD 2D ─────────────────────────────────────────────────────────────
-  function draw2d() {
-    const { g, w, h } = fit(cv);
+  // 태그 = 실제 태그 그림 + 색 테두리 (색으로 여러 태그 구분)
+  function drawTagIcon(g, x, y, color, alpha) {
+    const h = 34, w = h * (ready(TAG_IMG) ? TAG_IMG.naturalWidth / TAG_IMG.naturalHeight : 0.54);
+    g.globalAlpha = alpha;
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(x, y + h / 2 + 4, w * 0.7, 4, 0, 0, 7); g.fill();
+    g.fillStyle = color; g.beginPath(); g.roundRect(x - w / 2 - 3, y - h / 2 - 3, w + 6, h + 6, 9); g.fill();
+    if (ready(TAG_IMG)) g.drawImage(TAG_IMG, x - w / 2, y - h / 2, w, h);
+    else { g.fillStyle = '#fff'; g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, 7); g.fill(); }
+    g.globalAlpha = 1;
+    return { w, h };
+  }
+
+  // ── 평면도 (2D, 위에서 내려다봄) ───────────────────────────────────────
+  function draw2d(c) {
+    const { g, w, h } = fit(c), V = st.v2;
     g.fillStyle = '#fbfcfe'; g.fillRect(0, 0, w, h);
     const b = bounds();
-    const s = Math.min(w / (b.x1 - b.x0), h / (b.y1 - b.y0)) * st.zoom;
-    const cx = w / 2 + st.panX, cy = h / 2 + st.panY, mx = (b.x0 + b.x1) / 2, my = (b.y0 + b.y1) / 2;
+    const s = Math.min(w / (b.x1 - b.x0), h / (b.y1 - b.y0)) * V.zoom;
+    const cx = w / 2 + V.panX, cy = h / 2 + V.panY, mx = (b.x0 + b.x1) / 2, my = (b.y0 + b.y1) / 2;
     const P = (x, y) => [cx + (x - mx) * s, cy - (y - my) * s];
     // 1 m 격자
     g.strokeStyle = '#e6ebf1'; g.lineWidth = 1;
     for (let x = Math.floor(b.x0 - 5); x <= b.x1 + 5; x++) { const [a] = P(x, 0); g.beginPath(); g.moveTo(a, 0); g.lineTo(a, h); g.stroke(); }
     for (let y = Math.floor(b.y0 - 5); y <= b.y1 + 5; y++) { const [, a] = P(0, y); g.beginPath(); g.moveTo(0, a); g.lineTo(w, a); g.stroke(); }
-    const [ox, oy] = P(0, 0);
-    g.strokeStyle = '#d32f2f'; g.beginPath(); g.moveTo(ox, oy); g.lineTo(ox + 30, oy); g.stroke();
-    g.strokeStyle = '#388e3c'; g.beginPath(); g.moveTo(ox, oy); g.lineTo(ox, oy - 30); g.stroke();
-    label(g, '1 m 격자', 10, 18, '#8a99a8', 11);
-    // 로케이터
+    label(g, '평면도 · 격자 한 칸 = 1 m', 10, 18, '#8a99a8', 11);
+    // 로케이터 (실제 제품 그림 · 벽 설치는 바라보는 방향 화살표)
     for (const [id, l] of Object.entries(st.locators)) {
-      const [x, y] = P(l.x, l.y), r = Math.max(8, 0.18 * s);
-      g.fillStyle = '#e8edf3'; g.strokeStyle = '#4c7fb0'; g.lineWidth = 1.5;
-      g.fillRect(x - r, y - r, 2 * r, 2 * r); g.strokeRect(x - r, y - r, 2 * r, 2 * r);
-      label(g, `${short(id)}  (${l.x.toFixed(1)}, ${l.y.toFixed(1)}, ${l.z.toFixed(1)} m)`, x + r + 4, y + 4, '#1d4e89', 12, true);
+      const [x, y] = P(l.x, l.y), r = Math.max(15, 0.2 * s);
+      const fx = l.R[2], fy = l.R[5], wall = Math.hypot(fx, fy) > 0.35;   // 안테나 면 방향의 바닥 투영
+      if (wall) {
+        const L = r + 22, ex = x + fx * L, ey = y - fy * L, an = Math.atan2(-fy, fx);
+        g.strokeStyle = '#2f81f7'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(ex, ey); g.stroke();
+        g.fillStyle = '#2f81f7'; g.beginPath(); g.moveTo(ex, ey);
+        g.lineTo(ex - 8 * Math.cos(an - 0.45), ey - 8 * Math.sin(an - 0.45)); g.lineTo(ex - 8 * Math.cos(an + 0.45), ey - 8 * Math.sin(an + 0.45)); g.fill();
+      }
+      g.fillStyle = 'rgba(0,0,0,.12)'; g.beginPath(); g.roundRect(x - r + 2, y - r + 3, 2 * r, 2 * r, r * 0.25); g.fill();
+      if (ready(LOC_IMG)) g.drawImage(LOC_IMG, x - r, y - r, 2 * r, 2 * r);
+      else { g.fillStyle = '#e8edf3'; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+      label(g, `로케이터 ${short(id)}`, x + r + 5, y - 2, '#1d4e89', 12, true);
+      label(g, `높이 ${l.z.toFixed(1)} m · ${wall ? '벽 설치' : '천장 설치'}`, x + r + 5, y + 13, '#5b6b7c', 11);
     }
     // 태그
     for (const [id, t] of Object.entries(st.tags)) {
       if (t.x === undefined) continue;
       const alpha = live(t) ? 1 : 0.35;
-      g.globalAlpha = alpha * 0.6; g.strokeStyle = t.color; g.lineWidth = 2; g.beginPath();
-      t.trail.forEach((p, i) => { const [x, y] = P(p.x, p.y); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+      g.globalAlpha = alpha * 0.6; g.strokeStyle = t.color; g.lineWidth = 2; g.setLineDash([5, 4]); g.beginPath();
+      t.trail.forEach((p, i) => { const [x, y] = P(p.x, p.y); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
       const [x, y] = P(t.x, t.y);
-      g.globalAlpha = alpha * 0.15; g.fillStyle = t.color; g.beginPath(); g.arc(x, y, Math.min(t.sd, 3) * s, 0, 7); g.fill();
-      g.globalAlpha = alpha; g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill();
-      g.fillStyle = t.color; g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill();
-      label(g, `${short(id)} (${t.x.toFixed(2)}, ${t.y.toFixed(2)})`, x + 11, y - 8, t.color, 12, true);
+      g.globalAlpha = alpha * 0.13; g.fillStyle = t.color; g.beginPath(); g.arc(x, y, Math.min(t.sd, 3) * s, 0, 7); g.fill();
+      const ic = drawTagIcon(g, x, y, t.color, alpha);
+      g.globalAlpha = alpha;
+      label(g, `태그 ${short(id)}`, x + ic.w / 2 + 8, y - 4, t.color, 13, true);
+      label(g, `(${t.x.toFixed(2)}, ${t.y.toFixed(2)}) m`, x + ic.w / 2 + 8, y + 12, '#5b6b7c', 11);
       g.globalAlpha = 1;
     }
   }
 
-  // ── AOD 3D (궤도 카메라 · 원근) ────────────────────────────────────────
-  function draw3d() {
-    const { g, w, h } = fit(cv);
-    g.fillStyle = '#fbfcfe'; g.fillRect(0, 0, w, h);
-    const b = bounds(), mx = (b.x0 + b.x1) / 2, my = (b.y0 + b.y1) / 2;
+  // ── 입체 (3D · 궤도 카메라 · 실제 케이스 모양) ─────────────────────────
+  const cache3 = document.createElement('canvas'); let cacheKey = '';
+  function cam3(w, h) {
+    const V = st.v3, b = bounds(), mx = (b.x0 + b.x1) / 2, my = (b.y0 + b.y1) / 2;
     const ext = Math.max(b.x1 - b.x0, b.y1 - b.y0, 4);
-    const s = Math.min(w, h) / ext * 0.85 * st.zoom;
-    const cyaw = Math.cos(st.yaw), syaw = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
+    const s = Math.min(w, h) / ext * 0.85 * V.zoom;
+    const cyaw = Math.cos(V.yaw), syaw = Math.sin(V.yaw), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
     const P = (x, y, z) => {
       x -= mx; y -= my;
       const xr = x * cyaw - y * syaw, yr = x * syaw + y * cyaw;      // 수직축 회전
       const yv = yr * cp - z * sp, zv = yr * sp + z * cp;              // 내려다보기
       const k = 1 / (1 + yv * 0.04);                                   // 약한 원근
-      return [w / 2 + st.panX + xr * s * k, h * 0.58 + st.panY - zv * s * k];
+      return [w / 2 + V.panX + xr * s * k, h * 0.58 + V.panY - zv * s * k, yv];
     };
-    g.strokeStyle = '#e3e9f0'; g.lineWidth = 1;
-    for (let x = Math.floor(b.x0); x <= Math.ceil(b.x1); x++) { const a = P(x, b.y0, 0), c = P(x, b.y1, 0); g.beginPath(); g.moveTo(...a); g.lineTo(...c); g.stroke(); }
-    for (let y = Math.floor(b.y0); y <= Math.ceil(b.y1); y++) { const a = P(b.x0, y, 0), c = P(b.x1, y, 0); g.beginPath(); g.moveTo(...a); g.lineTo(...c); g.stroke(); }
-    const o = P(0, 0, 0);
-    [['#d32f2f', [1, 0, 0], 'x'], ['#388e3c', [0, 1, 0], 'y'], ['#3949ab', [0, 0, 1], 'z']].forEach(([c, v, n]) => {
-      const e = P(...v); g.strokeStyle = c; g.lineWidth = 2; g.beginPath(); g.moveTo(...o); g.lineTo(...e); g.stroke(); label(g, n, e[0] + 3, e[1] - 3, c, 11, true);
-    });
-    for (const [id, l] of Object.entries(st.locators)) {
-      const f = P(l.x, l.y, 0), c = P(l.x, l.y, l.z), r = 0.2;
-      g.strokeStyle = 'rgba(96,125,139,.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(...f); g.lineTo(...c); g.stroke();
-      const q = [P(l.x - r, l.y - r, l.z), P(l.x + r, l.y - r, l.z), P(l.x + r, l.y + r, l.z), P(l.x - r, l.y + r, l.z)];
-      g.fillStyle = 'rgba(76,127,176,.35)'; g.strokeStyle = '#4c7fb0'; g.lineWidth = 1.5;
-      g.beginPath(); q.forEach((p, i) => i ? g.lineTo(...p) : g.moveTo(...p)); g.closePath(); g.fill(); g.stroke();
-      label(g, `${short(id)} (${l.z.toFixed(1)} m)`, c[0] + 10, c[1] - 6, '#1d4e89', 12, true);
+    const fwd = [syaw * cp, cyaw * cp, -sp];                           // 카메라가 보는 방향 (world)
+    return { P, b, fwd };
+  }
+  const LIGHT = (() => { const v = [0.35, -0.55, 0.76], l = Math.hypot(...v); return v.map(x => x / l); })();
+  function drawCase(g, l, P, fwd) {
+    const { v, f, n } = MESH, R = l.Rm, nv = v.length / 3;
+    const sx = new Float32Array(nv), sy = new Float32Array(nv), sz = new Float32Array(nv);
+    for (let i = 0; i < nv; i++) {
+      const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
+      const q = P(l.x + R[0] * x + R[1] * y + R[2] * z, l.y + R[3] * x + R[4] * y + R[5] * z, l.z + R[6] * x + R[7] * y + R[8] * z);
+      sx[i] = q[0]; sy[i] = q[1]; sz[i] = q[2];
     }
+    const vis = [];
+    for (let t = 0; t < f.length; t += 3) {
+      const nx = R[0] * n[t] + R[1] * n[t + 1] + R[2] * n[t + 2];
+      const ny = R[3] * n[t] + R[4] * n[t + 1] + R[5] * n[t + 2];
+      const nz = R[6] * n[t] + R[7] * n[t + 1] + R[8] * n[t + 2];
+      if (nx * fwd[0] + ny * fwd[1] + nz * fwd[2] >= 0) continue;      // 뒷면 생략
+      const lit = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+      vis.push([sz[f[t]] + sz[f[t + 1]] + sz[f[t + 2]], t, lit]);
+    }
+    vis.sort((a, b) => b[0] - a[0]);                                   // 먼 면부터
+    g.lineWidth = 0.6; g.lineJoin = 'round';
+    for (const [, t, lit] of vis) {
+      const c = Math.round(150 + 95 * lit), col = `rgb(${c},${c + 2},${Math.min(255, c + 6)})`;
+      const a = f[t], b = f[t + 1], d = f[t + 2];
+      g.fillStyle = col; g.strokeStyle = col; g.beginPath();
+      g.moveTo(sx[a], sy[a]); g.lineTo(sx[b], sy[b]); g.lineTo(sx[d], sy[d]); g.closePath(); g.fill(); g.stroke();
+    }
+  }
+  function drawStatic3d(w, h, dpr) {
+    if (cache3.width !== Math.round(w * dpr) || cache3.height !== Math.round(h * dpr)) {
+      cache3.width = Math.round(w * dpr); cache3.height = Math.round(h * dpr);
+    }
+    const g = cache3.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.fillStyle = '#fbfcfe'; g.fillRect(0, 0, w, h);
+    const { P, b, fwd } = cam3(w, h);
+    g.strokeStyle = '#e3e9f0'; g.lineWidth = 1;
+    for (let x = Math.floor(b.x0); x <= Math.ceil(b.x1); x++) { const a = P(x, b.y0, 0), c = P(x, b.y1, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(c[0], c[1]); g.stroke(); }
+    for (let y = Math.floor(b.y0); y <= Math.ceil(b.y1); y++) { const a = P(b.x0, y, 0), c = P(b.x1, y, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(c[0], c[1]); g.stroke(); }
+    label(g, '입체 (3D) · 바닥 격자 1 m', 10, 18, '#8a99a8', 11);
+    // 먼 로케이터부터
+    const locs = Object.entries(st.locators).sort((a, c) => P(c[1].x, c[1].y, c[1].z)[2] - P(a[1].x, a[1].y, a[1].z)[2]);
+    for (const [id, l] of locs) {
+      const fl = P(l.x, l.y, 0), top = P(l.x, l.y, l.z);
+      g.strokeStyle = 'rgba(96,125,139,.45)'; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(fl[0], fl[1]); g.lineTo(top[0], top[1]); g.stroke(); g.setLineDash([]);
+      g.fillStyle = 'rgba(96,125,139,.35)'; g.beginPath(); g.arc(fl[0], fl[1], 2.5, 0, 7); g.fill();
+      if (MESH) drawCase(g, l, P, fwd);
+      else {
+        const r = 0.2, q = [P(l.x - r, l.y - r, l.z), P(l.x + r, l.y - r, l.z), P(l.x + r, l.y + r, l.z), P(l.x - r, l.y + r, l.z)];
+        g.fillStyle = 'rgba(200,205,212,.9)'; g.beginPath(); q.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.fill();
+      }
+      // 바라보는 방향 (안테나 면 법선)
+      const L = 0.55, e = P(l.x + l.R[2] * L, l.y + l.R[5] * L, l.z + l.R[8] * L);
+      g.strokeStyle = 'rgba(47,129,247,.85)'; g.lineWidth = 2; g.beginPath(); g.moveTo(top[0], top[1]); g.lineTo(e[0], e[1]); g.stroke();
+      g.fillStyle = '#2f81f7'; g.beginPath(); g.arc(e[0], e[1], 3, 0, 7); g.fill();
+      label(g, `로케이터 ${short(id)}`, top[0] + 26, top[1] - 10, '#1d4e89', 12, true);
+      label(g, `높이 ${l.z.toFixed(1)} m`, top[0] + 26, top[1] + 5, '#5b6b7c', 11);
+    }
+  }
+  function draw3d(c) {
+    const { g, w, h, dpr } = fit(c), V = st.v3;
+    const key = [w, h, dpr, V.yaw, V.pitch, V.zoom, V.panX, V.panY, st.placeVer, JSON.stringify(bounds())].join('|');
+    if (key !== cacheKey) { drawStatic3d(w, h, dpr); cacheKey = key; }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(cache3, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const { P } = cam3(w, h);
     for (const [id, t] of Object.entries(st.tags)) {
       if (t.x === undefined) continue;
       const alpha = live(t) ? 1 : 0.35;
-      g.globalAlpha = alpha * 0.6; g.strokeStyle = t.color; g.lineWidth = 2; g.beginPath();
-      t.trail.forEach((p, i) => { const q = P(p.x, p.y, p.z); i ? g.lineTo(...q) : g.moveTo(...q); }); g.stroke();
-      const q = P(t.x, t.y, t.z);
-      g.globalAlpha = alpha; g.fillStyle = '#fff'; g.beginPath(); g.arc(q[0], q[1], 9, 0, 7); g.fill();
-      g.fillStyle = t.color; g.beginPath(); g.arc(q[0], q[1], 7, 0, 7); g.fill();
-      label(g, `${short(id)} (${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)})`, q[0] + 11, q[1] - 8, t.color, 12, true);
+      g.globalAlpha = alpha * 0.6; g.strokeStyle = t.color; g.lineWidth = 2; g.setLineDash([5, 4]); g.beginPath();
+      t.trail.forEach((p, i) => { const q = P(p.x, p.y, p.z); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.stroke(); g.setLineDash([]);
+      const fl = P(t.x, t.y, 0), q = P(t.x, t.y, t.z);
+      g.globalAlpha = alpha * 0.35; g.fillStyle = t.color; g.beginPath(); g.ellipse(fl[0], fl[1], 10, 4, 0, 0, 7); g.fill();
+      const ic = drawTagIcon(g, q[0], q[1] - 17, t.color, alpha);
+      g.globalAlpha = alpha;
+      label(g, `태그 ${short(id)}`, q[0] + ic.w / 2 + 8, q[1] - 20, t.color, 13, true);
+      label(g, `(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)}) m`, q[0] + ic.w / 2 + 8, q[1] - 5, '#5b6b7c', 11);
       g.globalAlpha = 1;
     }
+    label(g, '드래그: 돌려 보기 · 휠: 확대', 10, h - 10, '#8a99a8', 11);
   }
 
-  // ── AOA: 로케이터별 방위·앙각 원 + 흐르는 그래프 ──────────────────────
+  // ── 방향 감지 (AOA): 로케이터별 방위·앙각 원 + 흐르는 그래프 ───────────
   const dialC = document.getElementById('dial'), azC = document.getElementById('chAz'), elC = document.getElementById('chEl');
   function drawAoa() {
     const loc = st.selLoc, series = (loc && st.angles[loc]) || {};
@@ -315,7 +499,8 @@
         g.beginPath(); g.moveTo(c[0] + dx * r, c[1] + dy * r); g.lineTo(c[0] + dx * (r - 9), c[1] + dy * (r - 9)); g.stroke();
         g.textAlign = 'center'; label(g, d + '°', c[0] + dx * (r + 14), c[1] + dy * (r + 14) + 4, '#546e7a', 11); g.textAlign = 'left';
       }
-      label(g, '정면', c[0] + 5, c[1] + 14, '#8a99a8', 10);
+      if (ready(LOC_IMG)) { g.globalAlpha = 0.35; g.drawImage(LOC_IMG, c[0] - 20, c[1] - 20, 40, 40); g.globalAlpha = 1; }
+      label(g, '정면', c[0] + 22, c[1] + 4, '#8a99a8', 10);
       for (const [tag, arr] of Object.entries(series)) {
         if (!arr.length) continue;
         const col = colorOf(tag), s = arr[arr.length - 1];
@@ -324,10 +509,10 @@
         g.globalAlpha = 1;
         const a = s.az * Math.PI / 180;
         g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(...c); g.lineTo(c[0] - Math.sin(a) * r, c[1] - Math.cos(a) * r); g.stroke();
-        const q = P(s.az, s.el); g.fillStyle = '#fff'; g.beginPath(); g.arc(q[0], q[1], 7, 0, 7); g.fill();
-        g.fillStyle = col; g.beginPath(); g.arc(q[0], q[1], 5, 0, 7); g.fill();
+        const q = P(s.az, s.el);
+        drawTagIcon(g, q[0], q[1], col, 1);
       }
-      label(g, loc ? `로케이터 ${short(loc)}` : '로케이터 선택', 10, 18, '#263238', 13, true);
+      label(g, loc ? `로케이터 ${short(loc)} 가 본 태그 방향` : '로케이터 선택', 10, 18, '#263238', 13, true);
     }
     const chart = (C, key, max, step, title) => {
       const { g, w, h } = fit(C);
@@ -336,7 +521,7 @@
       label(g, title, 6, 14, '#37474f', 12, true);
       g.strokeStyle = '#e8edf2'; g.lineWidth = 1;
       for (let v = 0; v <= max; v += step) { const y = T + ph - v / max * ph; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); label(g, String(v), 4, y + 4, '#8a99a8', 10); }
-      ['-60s', '-30s', '지금'].forEach((s, i) => label(g, s, L + pw * i / 2 - (i === 2 ? 18 : 10), h - 3, '#8a99a8', 10));
+      ['-60초', '-30초', '지금'].forEach((s, i) => label(g, s, L + pw * i / 2 - (i === 2 ? 18 : 10), h - 3, '#8a99a8', 10));
       for (const [tag, arr] of Object.entries(series)) {
         g.strokeStyle = colorOf(tag); g.lineWidth = 2; g.beginPath(); let prev = null;
         for (const p of arr) {
@@ -346,38 +531,50 @@
         g.stroke();
       }
     };
-    chart(azC, 'az', 360, 90, '방위 (°) · 0° = 로케이터 기준축');
-    chart(elC, 'el', 90, 30, '앙각 (°) · 90° = 정면');
+    chart(azC, 'az', 360, 90, '좌우 방향 (방위각, °)');
+    chart(elC, 'el', 90, 30, '높낮이 (앙각, ° · 90° = 바로 정면)');
   }
 
   // ── 화면 전환 · 조작 ───────────────────────────────────────────────────
-  const stage = document.getElementById('stage');
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
-    st.view = b.dataset.view; st.zoom = 1; st.panX = st.panY = 0;
-  });
+  const DESC = {
+    '2d': '위에서 내려다본 지도입니다. 태그 그림이 있는 곳이 지금 위치이고, 점선은 지나온 길이에요. (드래그: 이동 · 휠: 확대)',
+    '3d': '로케이터의 실제 모양과 설치 높이까지 입체로 봅니다. 파란 선은 로케이터가 바라보는 방향이에요. 드래그해서 돌려 보세요.',
+    'both': '평면도와 입체 화면을 나란히 봅니다. 같은 태그가 두 화면에서 함께 움직입니다.',
+    'aoa': '로케이터 한 대가 "태그가 어느 쪽에 있는지"를 각도로 알아낸 결과입니다. 위치는 이런 각도 여러 개를 합쳐서 계산합니다.',
+  };
+  const stage = document.getElementById('stage'), desc = document.getElementById('desc');
+  const setView = (v) => {
+    st.view = v; desc.textContent = DESC[v];
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.view === v));
+  };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setView(b.dataset.view));
+  setView(['2d', '3d', 'both', 'aoa'].includes(params.get('view')) ? params.get('view') : '2d');
   let drag = null;
-  stage.addEventListener('pointerdown', e => { if (st.view === 'aoa') return; drag = { x: e.clientX, y: e.clientY }; stage.setPointerCapture(e.pointerId); });
+  const which = (e) => e.target === cv3 ? 'v3' : e.target === cv2 ? 'v2' : null;
+  stage.addEventListener('pointerdown', e => { const k = which(e); if (!k) return; drag = { k, x: e.clientX, y: e.clientY }; stage.setPointerCapture(e.pointerId); });
   stage.addEventListener('pointermove', e => {
-    if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
-    if (st.view === '3d') { st.yaw += dx * 0.008; st.pitch = Math.max(0.15, Math.min(1.5, st.pitch + dy * 0.008)); }
-    else { st.panX += dx; st.panY += dy; }
+    if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    if (drag.k === 'v3') { st.v3.yaw += dx * 0.008; st.v3.pitch = Math.max(0.15, Math.min(1.5, st.v3.pitch + dy * 0.008)); }
+    else { st.v2.panX += dx; st.v2.panY += dy; }
   });
   stage.addEventListener('pointerup', () => drag = null);
-  stage.addEventListener('wheel', e => { if (st.view === 'aoa') return; e.preventDefault(); st.zoom = Math.max(0.3, Math.min(6, st.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); }, { passive: false });
+  stage.addEventListener('wheel', e => {
+    const k = which(e); if (!k) return; e.preventDefault();
+    st[k].zoom = Math.max(0.3, Math.min(6, st[k].zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  }, { passive: false });
 
-  const empty = document.getElementById('empty'), hint = document.getElementById('hint'), aoaWrap = document.getElementById('aoaWrap');
+  const empty = document.getElementById('empty'), aoaWrap = document.getElementById('aoaWrap'), views = document.getElementById('views');
   function side() {
     const tags = document.getElementById('tags'), now = Date.now();
     const ids = Object.keys(st.tags);
     tags.innerHTML = ids.length ? ids.map(id => {
       const t = st.tags[id], on = live(t);
-      return `<div class="tag"><span class="sw" style="background:${t.color}"></span><div><b>${short(id)}</b>
-        <small>${on ? `수신 중 · (${t.x.toFixed(2)}, ${t.y.toFixed(2)}) ±${t.sd.toFixed(2)} m` : `대기 · ${Math.round((now - t.ts) / 1000)}초 전`}</small></div></div>`;
+      return `<div class="tag"><span class="sw" style="background:${t.color}"></span><div><b>태그 ${short(id)}</b>
+        <small>${on ? `수신 중 · (${t.x.toFixed(2)}, ${t.y.toFixed(2)}) m · 오차 ±${t.sd.toFixed(2)} m` : `대기 · ${Math.round((now - t.ts) / 1000)}초 전`}</small></div></div>`;
     }).join('') : '<span style="color:var(--sub)">수신된 태그 없음</span>';
     const devs = Object.entries(st.devices);
     document.getElementById('devs').innerHTML = devs.length ? devs.map(([id, d]) =>
-      `<div class="tag"><span class="sw" style="background:${d.online ? '#22a06b' : '#b0bccb'}"></span><div><b>${d.type === 'server' ? '서버 ' + id : '로케이터 ' + id.slice(-4)}</b>
+      `<div class="tag"><span class="sw" style="background:${d.online ? '#22a06b' : '#b0bccb'}"></span><div><b>${d.type === 'server' ? '위치 계산 서버' : '로케이터 ' + id.slice(-4)}</b>
        <small>${d.online ? '온라인' : '오프라인'}${d.cpu_temp_c ? ` · ${d.cpu_temp_c}°C` : ''}</small></div></div>`).join('') : '—';
     const locBox = document.getElementById('locBox'), locs = document.getElementById('locs');
     locBox.style.display = st.view === 'aoa' ? '' : 'none';
@@ -388,21 +585,23 @@
   }
   function status() {
     const age = st.lastTs ? (Date.now() - st.lastTs) / 1000 : null;
-    if (!st.connected) { cdot.className = 'dot bad'; ctext.textContent = '브로커 연결 중…'; }
+    if (!st.connected) { cdot.className = 'dot bad'; ctext.textContent = '연결 중…'; }
     else if (age !== null && age < 10) { cdot.className = 'dot ok'; ctext.textContent = '실시간 수신 중'; }
     else { cdot.className = 'dot warn'; ctext.textContent = '연결됨 · 데이터 대기'; }
     document.getElementById('age').textContent = age === null ? '마지막 수신 —' : `마지막 수신 ${age < 1 ? '방금' : Math.round(age) + '초 전'}`;
   }
   function frame() {
-    const isAoa = st.view === 'aoa';
-    cv.style.display = isAoa ? 'none' : ''; aoaWrap.style.display = isAoa ? '' : 'none';
-    if (st.view === '2d') { draw2d(); hint.textContent = '드래그: 이동 · 휠: 확대'; }
-    else if (st.view === '3d') { draw3d(); hint.textContent = '드래그: 회전 · 휠: 확대'; }
-    else { drawAoa(); hint.textContent = ''; }
+    const v = st.view, isAoa = v === 'aoa';
+    views.style.display = isAoa ? 'none' : ''; aoaWrap.style.display = isAoa ? '' : 'none';
+    cv2.style.display = (v === '2d' || v === 'both') ? '' : 'none';
+    cv3.style.display = (v === '3d' || v === 'both') ? '' : 'none';
+    if (v === '2d' || v === 'both') draw2d(cv2);
+    if (v === '3d' || v === 'both') draw3d(cv3);
+    if (isAoa) drawAoa();
     const hasPos = Object.keys(st.tags).length > 0, hasAng = Object.keys(st.angles).length > 0;
     empty.style.display = isAoa ? (hasAng ? 'none' : '') : (hasPos || Object.keys(st.locators).length ? 'none' : '');
     empty.className = isAoa ? 'empty banner' : 'empty';
-    empty.textContent = isAoa ? '각도 데이터를 기다리는 중입니다 (현장에서 각도 중계를 켜 두었을 때 표시됩니다)' : '데이터를 기다리는 중입니다…';
+    empty.textContent = isAoa ? '방향 데이터를 기다리는 중입니다 (현장에서 각도 중계를 켜 두었을 때 표시됩니다)' : '데이터를 기다리는 중입니다…';
     side(); status();
     requestAnimationFrame(frame);
   }

@@ -196,23 +196,23 @@
     <div class="note"><span class="ico">⚠️</span><span>The <b>MQTT server must be running first</b>. Once powered, locators automatically connect to the MQTT server and start streaming data — no manual configuration required.</span></div>
 
     <h3>Locator Installation (Initial Setup)</h3>
-    <p>For the initial setup, install the locators as shown below and verify operation.
-       Mount the locators on the ceiling (recommended height: about 3 m) with the antenna
-       face pointing toward the floor.</p>
+    <p>Mount locators on the ceiling (recommended height about 3 m) with the antenna face pointing down, or high on a wall facing into the room.
+       Each locator's position and orientation are registered afterwards in the <a href="#tool">Install &amp; Verify Tool</a> by dragging and rotating it on the floor plan,
+       so here you only need to understand what those values mean.</p>
 
     <figure class="shot">
-      <img src="images/guide_install_layout_top.png" alt="Initial locator layout — top view">
-      <figcaption>Initial layout — top view (example spacing: 4 m × 2 m, with an auxiliary locator in the center)</figcaption>
+      <img src="images/guide_coord_axes_en.png" alt="Locator axes — +x toward 0° mark, +y toward 90° mark, +z out of the antenna face">
+      <figcaption>Locator axes — the angle marks on the board are the axes. +x = 0° mark, +y = 90° mark, +z = out of the antenna face</figcaption>
     </figure>
 
     <figure class="shot">
-      <img src="images/guide_install_layout_side.png" alt="Initial locator layout — side view">
-      <figcaption>Initial layout — side view (3 m above the floor, antenna face pointing down)</figcaption>
+      <img src="images/guide_coord_angles_en.png" alt="Definition of azimuth and elevation">
+      <figcaption>Azimuth · elevation — the tag direction a locator measures. Azimuth in the xy plane from +x; elevation up from the board face (90° = boresight)</figcaption>
     </figure>
 
     <figure class="shot">
-      <img src="images/guide_install_layout_position_info.png" alt="Coordinate information per locator">
-      <figcaption>Coordinate information per locator — the coordinate (x/y/z) and orientation values of each locator. These are the values registered to the server when you place locators in the Install &amp; Verify Tool</figcaption>
+      <img src="images/guide_coord_room_en.png" alt="Room coordinates and mounting orientation examples">
+      <figcaption>Room coordinates and orientation — ceiling mount (0, 180, 0), wall mount (270, 0, ψ). Coordinates (m) and orientation (°) feed the server's position solver</figcaption>
     </figure>
 
     <div class="note blue"><span class="ico">💡</span><span>Registering and changing each locator's position and orientation is handled in the <a href="#tool">Install &amp; Verify Tool</a> below — you never need to edit config files by hand.</span></div>

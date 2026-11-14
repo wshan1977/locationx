@@ -16,9 +16,9 @@
 | `viewer_screenshot.png` | 도면 위 위치 확인 화면 | 브로셔 소프트웨어 · 가이드 3-6 |
 | `guide_install_infra.png` | 시스템 구성도 (Tag→모니터링) | 가이드 1 |
 | `guide_kit_components.png` | Kit 구성품 전체 사진 | 가이드 1 |
-| `guide_install_layout_top.png` | 초기 설치 배치 Top view | 가이드 2 |
-| `guide_install_layout_side.png` | 초기 설치 배치 Side view | 가이드 2 |
-| `guide_install_layout_position_info.png` | 로케이터별 좌표 정보 | 가이드 2 |
+| `guide_coord_axes(_en).png` | 로케이터 좌표축 (0°=+x, 90°=+y, 정면=+z) | 가이드 2 |
+| `guide_coord_angles(_en).png` | 방위각·앙각 정의 | 가이드 2 · 데모 |
+| `guide_coord_room(_en).png` | 방 좌표계·설치 자세 예시 | 가이드 2 · 데모 |
 | `guide_mqtt_explorer.png` | MQTT Explorer 수신 화면 | 가이드 4 |
 | `server_mqtt_local.png` | MQTT 로컬 서버 (구성품 사진에서 추출·배경 투명) | 브로셔 하드웨어 |
 | `viewer_demo.gif` | 3D 위치 확인 동작 GIF (원본 58~76초 구간, 12fps) | 가이드 3-6 |
