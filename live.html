@@ -54,6 +54,8 @@
   .charts { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; }
   .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
            text-align: center; color: var(--sub); font-size: 14px; padding: 20px; pointer-events: none; }
+  .empty.banner { inset: 10px 10px auto 10px; height: auto; background: #fff8e6; border: 1px solid #f3dca6;
+                  border-radius: 10px; padding: 10px 14px; color: #7a5a12; }
   footer { color: var(--sub); font-size: 12.5px; padding: 18px 0 30px; }
   @media (max-width: 860px) {
     .grid { grid-template-columns: 1fr; }
@@ -375,11 +377,12 @@
     }).join('') : '<span style="color:var(--sub)">수신된 태그 없음</span>';
     const devs = Object.entries(st.devices);
     document.getElementById('devs').innerHTML = devs.length ? devs.map(([id, d]) =>
-      `<div class="tag"><span class="sw" style="background:${d.online ? '#22a06b' : '#b0bccb'}"></span><div><b>${d.type === 'server' ? '서버' : '로케이터'} ${id.slice(-4)}</b>
+      `<div class="tag"><span class="sw" style="background:${d.online ? '#22a06b' : '#b0bccb'}"></span><div><b>${d.type === 'server' ? '서버 ' + id : '로케이터 ' + id.slice(-4)}</b>
        <small>${d.online ? '온라인' : '오프라인'}${d.cpu_temp_c ? ` · ${d.cpu_temp_c}°C` : ''}</small></div></div>`).join('') : '—';
     const locBox = document.getElementById('locBox'), locs = document.getElementById('locs');
     locBox.style.display = st.view === 'aoa' ? '' : 'none';
     const lids = [...new Set([...Object.keys(st.angles), ...Object.keys(st.locators)])].sort();
+    if (!st.selLoc && lids.length) st.selLoc = lids[0];
     const html = lids.map(l => `<button data-l="${l}" class="${l === st.selLoc ? 'on' : ''}">${short(l)}</button>`).join('');
     if (locs.dataset.h !== html) { locs.innerHTML = html; locs.dataset.h = html; locs.querySelectorAll('button').forEach(b => b.onclick = () => { st.selLoc = b.dataset.l; }); }
   }
@@ -398,6 +401,7 @@
     else { drawAoa(); hint.textContent = ''; }
     const hasPos = Object.keys(st.tags).length > 0, hasAng = Object.keys(st.angles).length > 0;
     empty.style.display = isAoa ? (hasAng ? 'none' : '') : (hasPos || Object.keys(st.locators).length ? 'none' : '');
+    empty.className = isAoa ? 'empty banner' : 'empty';
     empty.textContent = isAoa ? '각도 데이터를 기다리는 중입니다 (현장에서 각도 중계를 켜 두었을 때 표시됩니다)' : '데이터를 기다리는 중입니다…';
     side(); status();
     requestAnimationFrame(frame);
